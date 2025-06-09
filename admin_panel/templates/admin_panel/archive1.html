@@ -1,0 +1,297 @@
+{% extends 'base/layout.html' %}
+{% load custom_filters %}
+
+{% block title %}Архив{% endblock %}
+
+{% block content %}
+<div class="d-flex h-100" style="height: 100%;">
+    <div class="archive-sidebar d-flex flex-column h-100">
+        <div class="py-2 sidebar-header d-flex align-items-center justify-content-center border-bottom p-0">
+            <h3 class="mb-0">Архив карточек</h3>
+        </div>
+         <div class="filter-panel p-3">
+            <div class="d-flex gap-2 mb-3">
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle d-flex align-items-center"
+                            id="dropdownMenuButton"
+                            data-bs-toggle="dropdown">
+                        <i class="bi bi-funnel me-2"></i>Фильтры
+                    </button>
+                    <div class="dropdown-menu shadow-lg">
+                        <a class="dropdown-item filter-option" data-period="0">
+                            <i class="bi bi-clock-history me-2"></i>Все сообщения
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item filter-option" data-period="1">
+                            <i class="bi bi-sun me-2"></i>Сегодня
+                        </a>
+                        <a class="dropdown-item filter-option" data-period="7">
+                            <i class="bi bi-calendar-week me-2"></i>За неделю
+                        </a>
+                        <a class="dropdown-item filter-option" data-period="30">
+                            <i class="bi bi-calendar-month me-2"></i>За месяц
+                        </a>
+                        <div class="dropdown-divider"></div>
+<!--                        <a class="dropdown-item filter-option" id="filter-by-date-range-custom">-->
+<!--                            <i class="bi bi-calendar-range me-2"></i>Выбрать дату-->
+<!--                        </a>-->
+                        <a class="dropdown-item filter-option" id="id-filter-modal-btn">
+                            <i class="bi bi-person-badge me-2"></i>По ID
+                        </a>
+                        <a class="dropdown-item filter-option" id="name-filter-modal-btn">
+                            <i class="bi bi-person-lines-fill me-2"></i>По фамилии
+                        </a>
+                        <a class="dropdown-item filter-option" id="content-filter-modal-btn">
+                            <i class="bi bi-search me-2"></i>По содержанию
+                        </a>
+                        <a class="dropdown-item filter-option" id="rating-filter-modal-btn">
+                            <i class="bi bi-hand-thumbs-up me-2"></i>По оценкам
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" id="export-excel-btn">
+                            <i class="bi bi-file-earmark-excel me-2"></i>Экспорт в Excel
+                        </a>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="refresh-dialogs" title="Обновить диалоги">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <button class="btn btn-danger" id="reset-filter" title="Сбросить фильтры">
+                    <i class="bi bi-trash"></i> Сбросить фильтры
+                </button>
+            </div>
+        </div>
+        <ul class="chat-list" style="flex-grow: 1; overflow-y: auto; box-sizing: border-box; list-style-type: none; padding-left: 0;">
+            {% for dialog in dialogs %}
+            <li class="chat-item border-top border-bottom py-3 px-2"
+                id="dialog-{{ dialog.id }}"
+                data-username="{{ dialog.user.username }}"
+                data-userid="{{ dialog.user.id }}"
+                data-tabel="{{ dialog.tabel_number }}"
+                style="transition: background-color 0.3s ease; cursor: pointer"
+                onclick="loadMessages({{ dialog.id }}); setActiveDialog(this); updateUserInfo('{{ dialog.user.username }}');">
+                <div class="chat-item-wrapper d-flex flex-column justify-content-between" style="width: 295px;">
+                    <div class="d-flex w-100 flex-row justify-content-between">
+                        <div class="chat_user w-50" style="overflow-x: hidden; font-weight: bold;">{{ dialog.user.username }}</div>
+                        <div class="chat-time d-flex w-50 justify-content-end text-muted" style="overflow-x: hidden;">
+                            <span class="timestamp">{{ dialog.last_message_timestamp|add_hours:3|date:'Y-m-d H:i:s' }}</span>
+                        </div>
+                    </div>
+                    <div class="d-flex w-100">
+                        <p><strong>{{ dialog.last_message_username }}:</strong></p>
+                        <p class="dialog-content mb-0">
+                            {% if dialog.last_message|length > 25 %}
+                                {{ dialog.last_message|slice:":25" }}...
+                            {% else %}
+                                {{ dialog.last_message }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="chat-container d-flex flex-column flex-grow-1">
+        <div class="chat-header d-flex align-items-center justify-content-center border-bottom border-start border-end py-2">
+            <h3 class="mb-0">Карточка пользователя</h3>
+        </div>
+        <div id="chat-messages" class="chat-messages flex-grow-1 p-3 border-start border-end" style="overflow-y: auto;"></div>
+    </div>
+
+    <div class="user-info d-flex flex-column align-items-center" style="width: 300px; margin-left: auto;">
+        <div class="user-info-header w-100 d-flex align-items-center justify-content-center border-bottom py-2 mb-4">
+            <h3 class="mb-0">Подробности</h3>
+        </div>
+        <h4 class="mb-2" id="user-info-username"></h4>
+        <p class="mb-2" id="user-info-status" style="color: {{ user.is_online|yesno:'green,red' }};"></p>
+        <p class="mb-2" style="font-size: 0.8rem; text-align: center; max-width: 280px;" id="user-info-last-active"></p>
+        <p class="mb-2" style="font-size: 0.8rem; text-align: center; max-width: 280px;" id="user-info-department"></p>
+        <p class="mb-2" style="font-size: 0.8rem; text-align: center; max-width: 280px;" id="user-info-company"></p>
+        <p class="mb-2" style="font-size: 0.8rem; text-align: center; max-width: 280px;" id="user-info-title"></p>
+        <p class="mb-2" style="font-size: 0.8rem; text-align: center; max-width: 280px;" id="user-info-tabel-number"></p>
+
+   </div>
+</div>
+
+<div class="modal fade" id="date-range-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar-range me-2"></i>Выбор периода
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="date-range-picker">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Начальная дата</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-calendar"></i>
+                            </span>
+                            <input type="text"
+                                   id="start-date"
+                                   class="form-control datepicker"
+                                   placeholder="Выберите дату">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Конечная дата</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-calendar"></i>
+                            </span>
+                            <input type="text"
+                                   id="end-date"
+                                   class="form-control datepicker"
+                                   placeholder="Выберите дату">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Отмена
+                </button>
+                <button type="button"
+                        class="btn btn-primary"
+                        id="submit-date-range">
+                    Применить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="name-filter-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-lines-fill me-2"></i>Фильтр по фамилии
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Введите фамилию</label>
+                    <div class="input-group">
+                        <input type="text" id="filter-name" class="form-control" placeholder="Пример: Иванов">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="apply-name-filter">Поиск</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="content-filter-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-search me-2"></i>Фильтр по содержанию
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Введите текст для поиска</label>
+                    <div class="input-group">
+                        <input type="text" id="filter-content" class="form-control" placeholder="Пример: договор">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="apply-content-filter">Поиск</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="rating-filter-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-hand-thumbs-up me-2"></i>Фильтр по оценкам
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Выберите тип оценки</label>
+                    <select class="form-select" id="filter-rating-type">
+                        <option value="like">Только с лайками</option>
+                        <option value="dislike">Только с дизлайками</option>
+                        <option value="any">С любой оценкой</option>
+                        <option value="none">Без оценок</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="apply-rating-filter">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="id-filter-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-fingerprint me-2"></i>Фильтр по ID
+                </h5>
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal">
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Введите ID пользователя</label>
+                    <div class="input-group">
+                        <input type="text"
+                               id="filter-id"
+                               class="form-control"
+                               placeholder="Пример: b00011111">
+                    </div>
+                    <div class="form-text text-muted small mt-1">
+                        ID можно найти в профиле пользователя
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Отмена
+                </button>
+                <button type="button"
+                        class="btn btn-primary"
+                        id="apply-id-filter">
+                    Поиск
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Удаление пользователя{% endblock %}
+
+{% block content %}
+    <div class="confirm-container mt-5">
+        <h2 class="text-center">Подтверждение удаления</h2>
+        <p class="text-center">Вы уверены, что хотите удалить пользователя {{ user.first_name }} {{ user.last_name }} из группы {{ user.group_number }} ?</p>
+        <form method="post">
+{% csrf_token %}            <div class="d-flex justify-content-center">
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-danger me-2">Удалить</button>
+                    <a href="{% url 'admin_panel:user_list' %}" class="btn btn-secondary">Отмена</a>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}

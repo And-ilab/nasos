@@ -1,0 +1,107 @@
+{% extends 'base/layout.html' %}
+{% load custom_filters %}
+
+{% block title %}Архив{% endblock %}
+
+{% block content %}
+<div class="d-flex h-100" style="height: 100%;">
+
+    <!-- Левая панель: Список пользователей -->
+    <div class="archive-sidebar border-end d-flex flex-column" style="width: 300px; overflow-y: auto;">
+
+        <!-- Кнопки фильтра -->
+        <div class="p-3 border-bottom bg-light d-flex align-items-center gap-2">
+            <button class="btn btn-primary btn-sm w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                Фильтры
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="filterUsers('students')">Студенты</a></li>
+                <li><a class="dropdown-item" href="#" onclick="filterUsers('teachers')">Преподаватели</a></li>
+            </ul>
+            <button class="btn btn-danger btn-sm" onclick="resetFilters()">Сбросить</button>
+        </div>
+
+        <!-- Прокручиваемый список пользователей -->
+        <div id="user-list" class="flex-grow-1" style="overflow-y: auto;">
+            {% for user in users %}
+                <div class="p-2 border-bottom user-item"
+                     style="cursor: pointer;"
+                     data-role="{{ user.role|lower }}"
+                     onclick="loadUserDetails({{ user.id }})">
+                    <strong>{{ user.last_name }} {{ user.first_name }} {{ user.middle_name }}</strong><br>
+                    <small>{{ user.role }}{% if user.group_number %}, гр. {{ user.group_number }}{% endif %}</small>
+                </div>
+            {% empty %}
+                <div class="p-2">Нет архивных пользователей</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Центральная панель: Карточка пользователя -->
+    <div class="chat-container d-flex flex-column flex-grow-1" style="min-width: 0;">
+        <div class="chat-header d-flex align-items-center justify-content-center border-bottom py-2">
+            <h3 class="mb-0">Карточка пользователя</h3>
+        </div>
+        <div id="user-details" class="chat-messages flex-grow-1 p-3" style="overflow-y: auto;">
+            <p class="text-muted">Выберите пользователя слева, чтобы увидеть его карточку.</p>
+        </div>
+    </div>
+
+    <!-- Правая панель: Подробности -->
+    <div class="details-sidebar border-start d-flex flex-column" style="width: 280px;">
+        <div class="p-3 border-bottom bg-light">
+            <h5 class="mb-0">Подробности</h5>
+        </div>
+        <div id="user-extra-info" class="flex-grow-1 p-3" style="overflow-y: auto;">
+            <p class="text-muted">Здесь будут регистрационные данные</p>
+        </div>
+        <div class="p-3 border-top">
+            <button class="btn btn-primary w-100 mb-2" onclick="startTraining()">Начать обучение</button>
+            <button class="btn btn-secondary w-100" onclick="startTesting()">Начать тестирование</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+function loadUserDetails(userId) {
+    $.ajax({
+        url: `/admin_panel/get_user_details/${userId}/`,
+        method: 'GET',
+        success: function(data) {
+            $('#user-details').html(data.details);
+            $('#user-extra-info').html(data.extra_info);
+        },
+        error: function() {
+            $('#user-details').html('<p class="text-danger">Ошибка при загрузке карточки</p>');
+            $('#user-extra-info').html('<p class="text-danger">Ошибка при загрузке подробностей</p>');
+        }
+    });
+}
+
+function filterUsers(role) {
+    role = role.toLowerCase();
+    $('.user-item').each(function() {
+        const userRole = $(this).data('role');
+        if (userRole === role) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+}
+
+function resetFilters() {
+    $('.user-item').show();
+}
+
+function startTraining() {
+    alert("Начать обучение — функция в разработке");
+}
+function startTesting() {
+    alert("Начать тестирование — функция в разработке");
+}
+</script>
+{% endblock %}

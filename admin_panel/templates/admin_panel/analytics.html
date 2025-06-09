@@ -1,0 +1,97 @@
+{% extends 'base/layout.html' %}
+
+{% block title %}Аналитика{% endblock %}
+
+{% block content %}
+<div class="analytics-wrapper">
+    <div class="analytics-sidebar">
+        <div class="py-2 sidebar-header d-flex align-items-center justify-content-center border-bottom p-0"
+             style="width: 100%;">
+            <h3 class="mb-0">Аналитические отчеты</h3>
+        </div>
+        <div class="d-flex flex-column gap-3 mt-4 w-100">
+            <button id="btn-test-count" class="btn custom-btn sidebar-btn">
+                Отчет об обучении
+            </button>
+            <button id="btn-messages-count" class="btn custom-btn sidebar-btn">
+                Отчет о тестировании
+            </button>
+<!--            <button id="btn-users-activity" class="btn custom-btn sidebar-btn">-->
+<!--                Активные пользователи-->
+<!--            </button>-->
+<!--&lt;!&ndash;            <button id="btn-iteractions-frequency" class="btn custom-btn sidebar-btn">&ndash;&gt;-->
+<!--&lt;!&ndash;                Частота взаимодействий&ndash;&gt;-->
+<!--&lt;!&ndash;            </button>&ndash;&gt;-->
+<!--            <button id="btn-satisfaction-level" class="btn custom-btn sidebar-btn">-->
+<!--                Уровень удовлетворенности-->
+<!--            </button>-->
+<!--            <button id="btn-failure-frequency" class="btn custom-btn sidebar-btn">-->
+<!--                Частота отказов-->
+<!--            </button>-->
+<!--            <button id="btn-popular-requests" class="btn custom-btn sidebar-btn">-->
+<!--                Популярные запросы-->
+<!--            </button>-->
+
+        </div>
+    </div>
+    <div class="analytics-content">
+        <div class="py-2 sidebar-header d-flex align-items-center justify-content-center border-bottom p-0"
+             style="width: 100%;">
+            <h3 class="mb-0">Название диаграммы</h3>
+        </div>
+        <div class="analytics-tools">
+            <div class="dropdown">
+                <button class="btn btn-primary d-flex align-items-center dropdown-toggle" id="dropdownMenuButton" data-bs-toggle="dropdown">
+                    <i class="bi bi-calendar me-2"></i> Фильтр
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <li><a class="dropdown-item filter-item" data-period="day">Сегодня</a></li>
+                    <li><a class="dropdown-item filter-item" data-period="week">За неделю</a></li>
+                    <li><a class="dropdown-item filter-item active" data-period="month">За месяц</a></li>
+                    <li>
+                        <a class="dropdown-item filter-item" data-period="custom-month" id="custom-month-trigger">
+                            Выбрать месяц
+                        </a>
+                        <div class="month-year-picker" style="display: none; padding: 10px;">
+                            <div class="d-flex gap-2 mb-2">
+                                <select class="form-select month-select">
+                                    <option value="0">Январь</option>
+                                    <option value="1">Февраль</option>
+                                    <option value="2">Март</option>
+                                    <option value="3">Апрель</option>
+                                    <option value="4">Май</option>
+                                    <option value="5">Июнь</option>
+                                    <option value="6">Июль</option>
+                                    <option value="7">Август</option>
+                                    <option value="8">Сентябрь</option>
+                                    <option value="9">Октябрь</option>
+                                    <option value="10">Ноябрь</option>
+                                   <option value="11">Декабрь</option>
+                                </select>
+                               <select class="form-select year-select"></select>
+                            </div>
+                            <button class="btn btn-primary btn-sm w-100 apply-month">Применить</button>
+                        </div>
+                    </li>
+                    <li>
+                        <a class="dropdown-item filter-item" data-period="custom-date" id="custom-date-trigger">
+                            Выбрать дату
+                        </a>
+                        <input type="date" class="form-control date-picker" id="date-picker" style="display: none;">
+                    </li>
+                </ul>
+            </div>
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-primary" id="btn-pie-chart"><i class="bi bi-pie-chart"></i></button>
+                <button class="btn btn-outline-primary" id="btn-bar-chart"><i class="bi bi-bar-chart"></i></button>
+                <button class="btn btn-outline-primary" id="btn-table"><i class="bi bi-table"></i></button>
+            </div>
+            <button class="btn btn-success d-flex align-items-center" id="export-button">
+                <i class="bi bi-download me-2" id="btn-export"></i> Экспорт в Excel
+            </button>
+        </div>
+        <div class="analytics-canvas"></div>
+    </div>
+</div>
+
+{% endblock %}
