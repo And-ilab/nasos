@@ -65,11 +65,6 @@ class User(AbstractBaseUser, PermissionsMixin):
             self.username = f"{self.first_name[0].upper()}.{self.last_name}"
         super().save(*args, **kwargs)
 
-    # def update_last_active(self):
-    #     self.last_active = timezone.now()
-    #     self.is_online = True
-    #     self.save()
-
     groups = models.ManyToManyField(
         Group,
         related_name="custom_user_set",
@@ -102,13 +97,24 @@ class ActivityLog(models.Model):
         ('start_practice', 'Начал практический тест'),
         ('register_student', 'Зарегистрирован студент'),
         ('login', 'Вход в систему'),
-        # можешь добавить любые другие события
+        ('training', 'Обучение'),
+        ('testing', 'Тестирование'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Пользователь")
     action = models.CharField(max_length=50, choices=ACTION_CHOICES, verbose_name="Действие")
     timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Время")
     difficulty = models.CharField(max_length=20, blank=True, null=True, verbose_name="Сложность")
+    start_time = models.DateTimeField(auto_now_add=True, verbose_name="Начало")
+    user_time = models.IntegerField(null=True, blank=True, verbose_name="Время ученика (сек)")
+    norm_time = models.IntegerField(null=True, blank=True, verbose_name="Нормативное время (сек)")
+    end_time = models.DateTimeField(null=True, blank=True)
+    score = models.IntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(10)],
+        verbose_name="Оценка"
+    )
+
 
     def __str__(self):
         return f"{self.user} - {self.get_action_display()} - {self.timestamp.strftime('%d.%m.%Y %H:%M')}"

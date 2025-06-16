@@ -10,13 +10,31 @@
         </tr>
     </thead>
     <tbody>
-        {% for event in user.events.all %}
+        {% for log in user.activitylog_set.all %}
         <tr>
-            <td>{{ event.type }}</td>
-            <td>{{ event.start_date }}</td>
-            <td>{{ event.end_date }}</td>
-            <td>{{ event.norm_duration }} / {{ event.actual_duration }}</td>
-            <td>{{ event.result }}</td>
+            <td>{{ log.get_action_display }}</td>
+            <td>{{ log.start_time|date:"d.m.Y H:i" }}</td>
+            <td>
+                {% if log.end_time %}
+                    {{ log.end_time|date:"d.m.Y H:i" }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if log.norm_time and log.user_time %}
+                    {{ log.norm_time }} сек. / {{ log.user_time }} сек.
+                {% else %}
+                    - / -
+                {% endif %}
+            </td>
+            <td>
+                {% if log.score is not None %}
+                    {{ log.score }}/10
+                {% else %}
+                    -
+                {% endif %}
+            </td>
         </tr>
         {% empty %}
         <tr><td colspan="5">Нет событий</td></tr>

@@ -42,7 +42,7 @@ import { OBJLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/
         const objLoader = new OBJLoader();
         objLoader.setMaterials(materials);
         objLoader.setPath('/static/admin_panel/models/');
-        objLoader.load('nasos.obj', (object) => {
+        objLoader.load('main_scene.obj', (object) => {
             console.log("Модель загружена");
             scene.add(object);
 

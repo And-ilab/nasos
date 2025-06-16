@@ -26,9 +26,9 @@
                     <th class="text-center sortable" onclick="sortTable('group_number')">Номер группы <i class="bi bi-arrow-up sort-icon" aria-hidden="true"></i><i class="bi bi-arrow-down sort-icon" aria-hidden="true"></i></th>
                     <th class="text-center sortable" onclick="sortTable('id')">ID пользователя <i class="bi bi-arrow-up sort-icon" aria-hidden="true"></i><i class="bi bi-arrow-down sort-icon" aria-hidden="true"></i></th>
                     <th class="text-center sortable" onclick="sortTable('role')">Роль <i class="bi bi-arrow-up sort-icon" aria-hidden="true"></i><i class="bi bi-arrow-down sort-icon" aria-hidden="true"></i></th>
-                    <th class="text-center sortable">Дата теста</th>
-                    <th class="text-center sortable">Время начала прохождения</th>
-                    <th class="text-center sortable">Оценка</th>
+<!--                    <th class="text-center sortable">Дата теста</th>-->
+<!--                    <th class="text-center sortable">Время начала прохождения</th>-->
+<!--                    <th class="text-center sortable">Оценка</th>-->
                     <th class="text-center sortable">Действие</th>
                 </tr>
                 </thead>
@@ -41,9 +41,9 @@
                     <td class="text-center text-dark">{{ user.group_number }}</td>
                     <td class="text-center text-dark">{{ user.id }}</td>
                     <td class="text-center text-dark">{{ user.role }}</td>
-                    <td class="text-center text-dark">{{ user.date_of_the_test }}</td>
-                    <td class="text-center text-dark">{{ user.time_test }}</td>
-                    <td class="text-center text-dark">{{ user.scores }}</td>
+<!--                    <td class="text-center text-dark">{{ user.date_of_the_test }}</td>-->
+<!--                    <td class="text-center text-dark">{{ user.time_test }}</td>-->
+<!--                    <td class="text-center text-dark">{{ user.scores }}</td>-->
                     <td class="text-center">
 
                     <a href="{% url 'admin_panel:user_update' user.id %}" class="btn btn-sm btn-outline-info mx-1">Изменить</a>

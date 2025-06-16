@@ -14,3 +14,15 @@ def add_hours(value, hours):
     if value:
         return value + timedelta(hours=hours)
     return value
+
+@register.filter(name='score_color')
+def score_color(value):
+    if value is None:
+        return 'secondary'
+    if value >= 9:
+        return 'success'
+    elif value >= 7:
+        return 'info'
+    elif value >= 5:
+        return 'warning'
+    return 'danger'

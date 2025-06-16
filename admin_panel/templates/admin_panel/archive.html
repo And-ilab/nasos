@@ -24,15 +24,15 @@
         <!-- Прокручиваемый список пользователей -->
         <div id="user-list" class="flex-grow-1" style="overflow-y: auto;">
             {% for user in users %}
-                <div class="p-2 border-bottom user-item"
-                     style="cursor: pointer;"
-                     data-role="{{ user.role|lower }}"
-                     onclick="loadUserDetails({{ user.id }})">
-                    <strong>{{ user.last_name }} {{ user.first_name }} {{ user.middle_name }}</strong><br>
-                    <small>{{ user.role }}{% if user.group_number %}, гр. {{ user.group_number }}{% endif %}</small>
-                </div>
+            <div class="p-2 border-bottom user-item"
+                 style="cursor: pointer;"
+                 data-role="{{ user.role|lower }}"
+                 onclick="loadUserDetails({{ user.id }})">
+                <strong>{{ user.last_name }} {{ user.first_name }} {{ user.middle_name }}</strong><br>
+                <small>{{ user.get_role_display }}{% if user.group_number %}, гр. {{ user.group_number }}{% endif %}</small>
+            </div>
             {% empty %}
-                <div class="p-2">Нет архивных пользователей</div>
+            <div class="p-2">Нет архивных пользователей</div>
             {% endfor %}
         </div>
     </div>
@@ -56,8 +56,14 @@
             <p class="text-muted">Здесь будут регистрационные данные</p>
         </div>
         <div class="p-3 border-top">
-            <button class="btn btn-primary w-100 mb-2" onclick="startTraining()">Начать обучение</button>
-            <button class="btn btn-secondary w-100" onclick="startTesting()">Начать тестирование</button>
+            <button class="btn btn-primary w-100 mb-2" onclick="startActivity('training')">Начать обучение</button>
+            <button class="btn btn-secondary w-100 mb-2" onclick="startActivity('testing')">Начать тестирование</button>
+            <div id="timer" class="mt-2 text-center" style="display: none;">
+                <span id="time-display">00:00:00</span>
+                <button class="btn btn-sm btn-danger ms-2" onclick="endActivity()">Завершить</button>
+            </div>
+            <div id="result-info" class="mt-2"></div>
+
         </div>
     </div>
 
@@ -66,42 +72,157 @@
 <!-- JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-function loadUserDetails(userId) {
-    $.ajax({
-        url: `/admin_panel/get_user_details/${userId}/`,
-        method: 'GET',
-        success: function(data) {
-            $('#user-details').html(data.details);
-            $('#user-extra-info').html(data.extra_info);
-        },
-        error: function() {
-            $('#user-details').html('<p class="text-danger">Ошибка при загрузке карточки</p>');
-            $('#user-extra-info').html('<p class="text-danger">Ошибка при загрузке подробностей</p>');
+    let currentActivity = null;
+    let startTimestamp = null;
+    let timerInterval = null;
+    let currentUserId = null;
+
+    function loadUserDetails(userId) {
+        currentUserId = userId;
+        $.ajax({
+            url: `/admin_panel/get_user_details/${userId}/`,
+            method: 'GET',
+            success: function(data) {
+                $('#user-details').html(data.details);
+                $('#user-extra-info').html(data.extra_info);
+                loadActivityHistory(userId);
+            },
+            error: function() {
+                $('#user-details').html('<p class="text-danger">Ошибка при загрузке карточки</p>');
+                $('#user-extra-info').html('<p class="text-danger">Ошибка при загрузке подробностей</p>');
+            }
+        });
+    }
+
+    function loadActivityHistory(userId) {
+        $.ajax({
+            url: `/admin_panel/get_activity_history/${userId}/`,
+            method: 'GET',
+            success: function(data) {
+                let html = '';
+                data.activities.forEach(activity => {
+                    html += `
+                    <div class="list-group-item">
+                        <strong>${activity.action_display}</strong><br>
+                        ${activity.start_time} - ${activity.end_time || 'в процессе'}<br>
+                        Время: ${activity.user_time || '-'} / ${activity.norm_time || '-'}<br>
+                        Оценка: ${activity.score || '-'}/10
+                    </div>`;
+                });
+                $('#activities-list').html(html || '<div class="list-group-item">Нет данных об активностях</div>');
+            }
+        });
+    }
+
+    function startActivity(activityType) {
+        if (!currentUserId) {
+            alert("Сначала выберите пользователя");
+            return;
         }
-    });
-}
 
-function filterUsers(role) {
-    role = role.toLowerCase();
-    $('.user-item').each(function() {
-        const userRole = $(this).data('role');
-        if (userRole === role) {
-            $(this).show();
-        } else {
-            $(this).hide();
+        if (currentActivity) {
+            alert("Завершите текущее действие перед началом нового");
+            return;
         }
-    });
-}
 
-function resetFilters() {
-    $('.user-item').show();
-}
+        // Показать таймер
+        $('#timer').show();
+        startTimestamp = new Date();
+        currentActivity = activityType;
 
-function startTraining() {
-    alert("Начать обучение — функция в разработке");
-}
-function startTesting() {
-    alert("Начать тестирование — функция в разработке");
-}
+        // Запустить таймер
+        let seconds = 0;
+        timerInterval = setInterval(() => {
+            seconds++;
+            const hours = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const secs = (seconds % 60).toString().padStart(2, '0');
+            $('#time-display').text(`${hours}:${mins}:${secs}`);
+        }, 1000);
+
+        // Отправить запрос на сервер
+        $.ajax({
+            url: `/admin_panel/start_activity/`,
+            method: 'POST',
+            data: {
+                user_id: currentUserId,
+                activity_type: activityType,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                console.log("Activity started:", response);
+            }
+        });
+    }
+
+    function endActivity() {
+        if (!currentActivity) return;
+
+        clearInterval(timerInterval);
+        const endTimestamp = new Date();
+        const duration = Math.floor((endTimestamp - startTimestamp) / 1000); // в секундах
+
+        // Получить оценку
+        const score = prompt("Введите оценку (0-10):", "5");
+        if (score === null) {
+            resetActivity();
+            return;
+        }
+
+        // Отправить данные на сервер
+        $.ajax({
+            url: `/admin_panel/end_activity/`,
+            method: 'POST',
+            data: {
+                user_id: currentUserId,
+                activity_type: currentActivity,
+                duration: duration,
+                score: score,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                $('#result-info').html(`
+                    <div class="alert alert-info">
+                        <strong>${currentActivity === 'training' ? 'Обучение' : 'Тестирование'}</strong><br>
+                        Время: ${formatDuration(duration)} / Норматив: 01:30:00<br>
+                        Оценка: ${score}/10
+                    </div>
+                `);
+                resetActivity();
+                loadActivityHistory(currentUserId);
+            }
+        });
+    }
+
+    function resetActivity() {
+        clearInterval(timerInterval);
+        currentActivity = null;
+        startTimestamp = null;
+        $('#timer').hide();
+        $('#time-display').text('00:00:00');
+    }
+
+    function formatDuration(seconds) {
+        const hours = Math.floor(seconds / 3600).toString().padStart(2, '0');
+        const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+        const secs = (seconds % 60).toString().padStart(2, '0');
+        return `${hours}:${mins}:${secs}`;
+    }
+
+    function filterUsers(role) {
+        role = role.toLowerCase();
+        $('.user-item').each(function() {
+            const userRole = $(this).data('role');
+            if (userRole === role) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    }
+
+    function resetFilters() {
+        $('.user-item').show();
+    }
 </script>
 {% endblock %}

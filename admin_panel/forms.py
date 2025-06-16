@@ -14,7 +14,13 @@ class UserForm(forms.ModelForm):
             'middle_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Иванович'}),
             'role': forms.Select(attrs={'class': 'form-control', 'id': 'id_role'}),
             'group_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '121901'}),
-            'date_of_the_test': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '26.12.2003'}),
+            'date_of_the_test': forms.DateTimeInput(
+                format='%Y-%m-%d %H:%M',  # Без секунд
+                attrs={
+                    'type': 'datetime-local',
+                    'class': 'form-control',
+                }
+            ),
 
 
         }
@@ -30,7 +36,7 @@ class UserForm(forms.ModelForm):
 class UserFormUpdate(UserForm):
     class Meta:
         model = User
-        fields = ['last_name','first_name','middle_name', 'role', 'group_number','scores', 'date_of_the_test']
+        fields = ['last_name','first_name','middle_name', 'role', 'group_number', 'date_of_the_test']
 
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Иван'}),
@@ -38,8 +44,14 @@ class UserFormUpdate(UserForm):
             'middle_name':forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Отчество'}),
             'role': forms.Select(attrs={'class': 'form-control'}),
             'group_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '121901'}),
-            'scores': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Оценка'}),
-            'date_of_the_test': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '26.12.2003'}),
+            #'scores': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Оценка'}),
+            'date_of_the_test': forms.DateTimeInput(
+                format='%Y-%m-%d %H:%M',  # Без секунд
+                attrs={
+                    'type': 'datetime-local',
+                    'class': 'form-control',
+                }
+            ),
         }
 
         labels = {
@@ -48,6 +60,5 @@ class UserFormUpdate(UserForm):
             'middle_name':'Отчество',
             'role': 'Роль',
             'group_number': 'Номер группы',
-            'scores': 'Оценка',
             'date_of_the_test': 'Дата теста'
         }
