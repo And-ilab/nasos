@@ -1,9 +1,0 @@
-<ul class="list-group list-group-flush">
-    <li class="list-group-item"><strong>Фамилия:</strong> {{ user.last_name }}</li>
-    <li class="list-group-item"><strong>Имя:</strong> {{ user.first_name }}</li>
-    <li class="list-group-item"><strong>Отчество:</strong> {{ user.middle_name }}</li>
-    <li class="list-group-item"><strong>Роль:</strong> {{ user.get_role_display }}</li>
-    {% if user.group_number %}
-    <li class="list-group-item"><strong>Группа:</strong> {{ user.group_number }}</li>
-    {% endif %}
-</ul>
