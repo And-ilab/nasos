@@ -1,3 +1,4 @@
+from direct.gui import DirectGui
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import DirectionalLight, AmbientLight, Vec4, TextNode, FrameBufferProperties, WindowProperties, \
     GraphicsPipe, Vec3, Point3, Plane
@@ -15,65 +16,36 @@ import math
 from panda3d.core import CollisionTraverser, CollisionHandlerQueue, CollisionRay, BitMask32, TextNode
 from direct.gui.OnscreenText import OnscreenText
 
+
 class MyApp(ShowBase):
     def __init__(self):
         super().__init__()
 
         font = self.loader.load_font("arial.ttf")
 
-        self.logical_parts = {
-            "вентиль1": "**/COMPOUND_NEW",
-            "ручка1": "**/COMPOUND094",
-            "вентиль2": "**/COMPOUND056",
-            "ручка2": "**/COMPOUND366",
-            "вентиль3": "**/COMPOUND034",
-            "ручка3": "**/COMPOUND089",
-            "вентиль4": "**/COMPOUND020",
-            "ручка4": "**/COMPOUND071",
-            "рычаг": "**/COMPOUND073",
-            "рычаг2": "**/COMPOUND065",
-        }
+        self.valve2_start_time = 0
+        self.valve4_start_time = 0
+        self.valve5_start_time = 0
+        self.valve6_start_time = 0
+
+        self._scenario_running = False  # Флаг выполнения сценария
+        self._current_task = None
+
 
         self.scenarios = [
             {
-                'name': "Подача воды от цистерны ",
-                'steps': [
-                    {'action': 'rotate_valve', 'valve': 1, 'direction': 1,
-                     'message': "Выключите сцепление из насосного отсека"},
-                    {'action': 'rotate_valve', 'valve': 1, 'direction': 1,
-                     'message': "Откройте задвижку «На лафетный ствол»"},
-                    {'action': 'rotate_valve', 'valve': 3, 'direction': 1,
-                     'message': " Откройте задвижку «Из цистерны»"},
-                    {'action': 'rotate_valve', 'valve': 5, 'direction': 1,
-                     'message': "Через 5 секунд закройте задвижку «На лафетный ствол»"},
-                    {'action': 'rotate_valve', 'valve': 1, 'direction': 1,
-                     'message': "Включите сцепление"},
-
-                ]
+                'name': "Подача воды от цистерны",
+                'type': 'method',
+                'method': 'first_scenario'
             },
             {
-                'name': "Аварийный сценарий",
-                'steps': [
-                    {'action': 'rotate_valve', 'valve': 2, 'direction': -1,
-                     'message': "Закрытие подачи пены"},
-                    {'action': 'rotate_valve', 'valve': 6, 'direction': 1,
-                     'message': "Активация аварийного насоса"},
-                    {'action': 'rotate_valve', 'valve': 4, 'direction': -1,
-                     'message': "Сброс давления"}
-                ]
+                'name': "Забор воды от открытого водоисточника",
+                'type': 'method',
+                'method': 'second_scenario'
             },
-            {
-                'name': "Тестовый сценарий",
-                'steps': [
-                    {'action': 'rotate_valve', 'valve': 1, 'direction': 1,
-                     'message': "Тест открытия ствола"},
-                    {'action': 'rotate_valve', 'valve': 1, 'direction': -1,
-                     'message': "Тест закрытия ствола"},
-                    {'action': 'rotate_valve', 'valve': 3, 'direction': 1,
-                     'message': "Тест регулировки давления"}
-                ]
-            }
         ]
+
+        offset = Vec3(1.1, 6, -0.3)
 
         self.preview_positions = {
             "COMPOUND3": {
@@ -91,10 +63,16 @@ class MyApp(ShowBase):
             "plane14": {
                 "pos": Point3(-1.7, -9.0, 2.35),
                 "look": Point3(-1.7, 1.1, 0.1)
-            }
+            },
+            "COMPOUND1": {
+                "pos": Point3(-1.7, -5.0, 0.8),
+                "look": Point3(-1.7, 1.1, 0.1)
+            },
         }
 
-
+        for key in self.preview_positions:
+            self.preview_positions[key]["pos"] += offset
+            self.preview_positions[key]["look"] += offset
 
         # Свет
         dlight = DirectionalLight("dlight")
@@ -104,16 +82,12 @@ class MyApp(ShowBase):
         render.set_light(render.attach_new_node(dlight))
         render.set_light(render.attach_new_node(alight))
 
-
-
-
         # Загрузка модели
         self.model = self.loader.load_model("111.glb")
         self.model.reparent_to(self.render)
         self.model.set_scale(1)
         self.cam.look_at(self.model)
 
-        print("Valve6 task added to taskMgr")
         self.ctrl_pressed = False
         self.accept('control', self.set_ctrl_pressed, [True])
         self.accept('control-up', self.set_ctrl_pressed, [False])
@@ -125,22 +99,16 @@ class MyApp(ShowBase):
         self.valve6_moving = False
         self.model.ls()
 
-
-
         point1 = self.model.find("**/point1")
         if point1.is_empty():
-
             print("❌ point1 не найден!")
         else:
             print(f"✅ point1 позиция: {point1.get_pos(render)}")
 
-
         if valve5_geom.is_empty():
-
             print("❌ Рычаг не найден!")
         else:
             print(f"✅ Рычаг позиция: {point1.get_pos(render)}")
-
             self.valve5_moving = False
 
         if point.is_empty():
@@ -157,7 +125,6 @@ class MyApp(ShowBase):
             print("✅ кнопка найдена")
             self.plane14 = plane14
 
-            # Получаем границы в локальных координатах модели
             min_b, max_b = self.plane14.get_tight_bounds()
             center = (min_b + max_b) * 0.5
             extent = (max_b - min_b) * 0.5
@@ -166,24 +133,64 @@ class MyApp(ShowBase):
             print(f"Границы plane14 (локальные): min={min_b}, max={max_b}")
             print(f"Центр: {center}, Размер: {extent}")
 
-            # Увеличиваем размер коллизии (если нужно)
-            extent *= 1.2  # Небольшой запас
+            extent *= 1.2
 
-            # Создаем коллизионный объект
             cnode = CollisionNode("plane14_col")
             cnode.add_solid(CollisionBox(center, extent.x, extent.y, extent.z))
             cnode.set_from_collide_mask(BitMask32.bit(1))
             cnode.set_into_collide_mask(BitMask32.bit(1))
 
-            # Прикрепляем коллизию к модели
             self.plane14_col_np = self.plane14.attach_new_node(cnode)
-            self.plane14_col_np.show()  # Для визуальной проверки
+            self.plane14_col_np.show()
 
-            # Проверяем итоговую трансформацию
             print(f"Позиция коллизии (мир): {self.plane14_col_np.get_pos(render)}")
             print(f"Масштаб коллизии: {self.plane14_col_np.get_scale()}")
 
+        valve2_geom = self.model.find("**/COMPOUND1")
+        point5 = self.model.find("**/point5")
+        if valve2_geom.is_empty():
+            print("❌ Рычаг не найден!")
+        else:
+            print("✅ Рыча~~г найден")
 
+            original_mat = valve2_geom.get_mat(self.model)
+            pivot_pos = point5.get_pos(self.model)
+            valve2_pos = valve2_geom.get_pos(self.model)
+
+            self.valve2_root = self.model.attach_new_node("valve2_root")
+            self.valve2_root.set_pos(pivot_pos)
+
+            self.valve2_pivot = self.valve2_root.attach_new_node("valve2_pivot")
+
+            valve2_geom.reparent_to(self.valve2_pivot)
+            self.valve2 = valve2_geom
+            valve2_geom.set_mat(original_mat)
+
+            relative_pos = valve2_pos - pivot_pos
+            valve2_geom.set_pos(relative_pos)
+
+            saved_pos = valve2_geom.get_pos()
+            valve2_geom.set_pos(0, 0, 0)
+
+            min_b, max_b = valve2_geom.get_tight_bounds()
+            center = (min_b + max_b) * 0.5
+            extent = (max_b - min_b) * 0.5
+            extent *= 200
+
+            cnode = CollisionNode("valve2_col")
+            cnode.add_solid(CollisionBox(center, extent.x, extent.y, extent.z))
+            cnode.set_from_collide_mask(BitMask32.bit(1))
+            cnode.set_into_collide_mask(BitMask32.bit(1))
+
+            self.valve2_col_np = valve2_geom.attach_new_node(cnode)
+            self.valve2_col_np.show()
+
+            valve2_geom.set_pos(saved_pos)
+
+            self.valve2_pivot.set_p(0)
+            self.valve2_target_angle = 90
+            self.valve2_moving = False
+            self.valve2_direction = 1
 
         valve4_geom = self.model.find("**/COMPOUND3")
         if valve4_geom.is_empty():
@@ -191,42 +198,33 @@ class MyApp(ShowBase):
         else:
             print("✅ Рычаг найден")
 
-            # Находим точку крепления (point8)
             pivot_node = self.model.find("**/point9")
-            #pivot_node = self.model.find("**/pCube")
             if pivot_node.is_empty():
                 print("❌ Точка крепления не найдена!")
                 return
 
-            # Сохраняем оригинальную трансформацию
-            original_mat = valve4_geom.get_mat(self.model)  # Получаем матрицу относительно модели
+            original_mat = valve4_geom.get_mat(self.model)
             pivot_pos = pivot_node.get_pos(self.model)
             valve4_pos = valve4_geom.get_pos(self.model)
 
-            # 1. Создаем новую иерархию узлов
             self.valve4_root = self.model.attach_new_node("valve4_root")
-            #self.valve4_root.set_mat(pivot_node.get_mat(self.model))
-            self.valve4_root.set_pos(pivot_pos)  # Помещаем корень в точку крепления
+            self.valve4_root.set_pos(pivot_pos)
 
             self.valve4_pivot = self.valve4_root.attach_new_node("valve4_pivot")
 
-            # 2. Переносим геометрию
             valve4_geom.reparent_to(self.valve4_pivot)
             self.valve4 = valve4_geom
-            #valve4_geom.set_pos(valve4_geom.get_pos(self.valve4_pivot))
-            valve4_geom.set_mat(original_mat)  # Восстанавливаем оригинальную трансформацию
+            valve4_geom.set_mat(original_mat)
 
-            # 3. Компенсируем смещение (относительно точки крепления)
             relative_pos = valve4_pos - pivot_pos
             valve4_geom.set_pos(relative_pos)
 
             saved_pos = valve4_geom.get_pos()
             valve4_geom.set_pos(0, 0, 0)
-            # 4. Настройка коллизии (после всех перемещений)
+
             min_b, max_b = valve4_geom.get_tight_bounds()
             center = (min_b + max_b) * 0.5
             extent = (max_b - min_b) * 0.5
-
             extent *= 20
 
             cnode = CollisionNode("valve4_col")
@@ -237,16 +235,13 @@ class MyApp(ShowBase):
             self.valve4_col_np = valve4_geom.attach_new_node(cnode)
             self.valve4_col_np.show()
 
-            # ВОЗВРАЩАЕМ позицию
             valve4_geom.set_pos(saved_pos)
 
-            # Настройки вращения
             self.valve4_pivot.set_r(0)
             self.valve4_target_angle = 85
             self.valve4_moving = False
             self.valve4_direction = 1
 
-            # Отладочная информация
             print(f"Позиция корня: {self.valve4_root.get_pos(render)}")
             print(f"Позиция pivot: {self.valve4_pivot.get_pos(render)}")
             print(f"Позиция геометрии: {valve4_geom.get_pos(render)}")
@@ -258,40 +253,33 @@ class MyApp(ShowBase):
         else:
             print("✅ Рычаг найден")
 
-            # Находим точку крепления (point8)
             pivot_node = self.model.find("**/point8")
             if pivot_node.is_empty():
                 print("❌ Точка крепления не найдена!")
                 return
 
-            # Сохраняем оригинальную трансформацию
-            original_mat = valve5_geom.get_mat(self.model)  # Получаем матрицу относительно модели
+            original_mat = valve5_geom.get_mat(self.model)
             pivot_pos = pivot_node.get_pos(self.model)
             valve5_pos = valve5_geom.get_pos(self.model)
 
-            # 1. Создаем новую иерархию узлов
             self.valve5_root = self.model.attach_new_node("valve5_root")
-            self.valve5_root.set_pos(pivot_pos)  # Помещаем корень в точку крепления
+            self.valve5_root.set_pos(pivot_pos)
 
             self.valve5_pivot = self.valve5_root.attach_new_node("valve5_pivot")
 
-            # 2. Переносим геометрию
             valve5_geom.reparent_to(self.valve5_pivot)
             self.valve5 = valve5_geom
-            valve5_geom.set_mat(original_mat)  # Восстанавливаем оригинальную трансформацию
+            valve5_geom.set_mat(original_mat)
 
-            # 3. Компенсируем смещение (относительно точки крепления)
             relative_pos = valve5_pos - pivot_pos
             valve5_geom.set_pos(relative_pos)
 
-
             saved_pos = valve5_geom.get_pos()
             valve5_geom.set_pos(0, 0, 0)
-            # 4. Настройка коллизии (после всех перемещений)
+
             min_b, max_b = valve5_geom.get_tight_bounds()
             center = (min_b + max_b) * 0.5
             extent = (max_b - min_b) * 0.5
-
             extent *= 20
 
             cnode = CollisionNode("valve5_col")
@@ -302,74 +290,55 @@ class MyApp(ShowBase):
             self.valve5_col_np = valve5_geom.attach_new_node(cnode)
             self.valve5_col_np.show()
 
-            # ВОЗВРАЩАЕМ позицию
             valve5_geom.set_pos(saved_pos)
 
-            # Настройки вращения
             self.valve5_pivot.set_p(0)
             self.valve5_target_angle = 85
             self.valve5_moving = False
             self.valve5_direction = 1
 
-            # Отладочная информация
-            print(f"Позиция корня: {self.valve5_root.get_pos(render)}")
-            print(f"Позиция pivot: {self.valve5_pivot.get_pos(render)}")
-            print(f"Позиция геометрии: {valve5_geom.get_pos(render)}")
-            print(f"Границы коллизии: {min_b} - {max_b}")
 
         self.coord_display = OnscreenText(text="", pos=(-1.3, 0.9), fg=(1, 1, 0, 1), scale=0.05, align=TextNode.ALeft)
-
         self.coord_traverser = CollisionTraverser()
         self.coord_queue = CollisionHandlerQueue()
-
         self.coord_ray = CollisionRay()
         self.coord_picker_node = CollisionNode('coord_ray')
-        self.coord_picker_node.set_from_collide_mask(BitMask32.bit(1))  # только по bit(1)
+        self.coord_picker_node.set_from_collide_mask(BitMask32.bit(1))
         self.coord_picker_node.set_into_collide_mask(BitMask32.all_off())
         self.coord_picker_np = camera.attach_new_node(self.coord_picker_node)
         self.coord_picker_node.add_solid(self.coord_ray)
-
         self.coord_traverser.add_collider(self.coord_picker_np, self.coord_queue)
-
-
 
         if valve6_geom.is_empty():
             print("❌ Manometr_Arrow не найден.")
             self.valve6 = None
             self.valve6_pivot = None
-
         else:
             print("✅ Manometr_Arrow найден.")
 
-            # 1. Найдём точку вращения стрелки
             pivot_node = self.model.find("**/point1")
             if pivot_node.is_empty():
                 print("❌ Точка point1 не найдена.")
                 return
 
-            # 2. Мировые позиции
             pivot_world = pivot_node.get_pos(render)
             valve6_world = valve6_geom.get_pos(render)
 
-            # 3. Создаём иерархию узлов
             self.valve6_root = self.model.attach_new_node("valve6_root")
             self.valve6_root.set_pos(render, pivot_world)
 
             self.valve6_pivot = self.valve6_root.attach_new_node("valve6_pivot")
 
-            # 4. Сохраняем текущую позицию и переносим геометрию
             valve6_geom.wrt_reparent_to(self.valve6_pivot)
             self.valve6 = valve6_geom
             relative_pos = valve6_world - pivot_world
             valve6_geom.set_pos(relative_pos)
 
-            # 🎯 Самое важное: получить правильные границы
-            # ВРЕМЕННО добавим узел для расчёта коллизии
             tmp_node = self.valve6_pivot.attach_new_node("tmp_for_bounds")
             valve6_geom.instance_to(tmp_node)
 
             tmp_node.set_pos(0, 0, 0)
-            tmp_node.flatten_light()  # обязательно, чтобы границы считались как у оригинала
+            tmp_node.flatten_light()
 
             min_b, max_b = tmp_node.get_tight_bounds()
             center = (min_b + max_b) * 0.5
@@ -377,7 +346,6 @@ class MyApp(ShowBase):
             tmp_node.remove_node()
             extent *= 1000
 
-            # 5. Добавим коллизию к valve6_geom
             col_node = CollisionNode("valve6_col")
             col_node.add_solid(CollisionBox(center, extent.x, extent.y, extent.z))
             col_node.set_into_collide_mask(BitMask32.bit(1))
@@ -388,7 +356,6 @@ class MyApp(ShowBase):
             self.valve6_col_np.set_render_mode_wireframe()
             self.valve6_col_np.show()
 
-            # 6. Начальное состояние
             self.valve6_angle = 0
             self.valve6_target_angle = 0
             self.valve6_moving = False
@@ -407,9 +374,9 @@ class MyApp(ShowBase):
         self.picker_np = self.camera.attach_new_node(self.picker_node)
         self.picker.add_collider(self.picker_np, self.pq)
 
-        #self.model.set_pos(1.2, 6, -0.3)
+        self.model.set_pos(1.1, 6, -0.3)
         self.model.set_hpr(270, 90, 0)
-        self.camera.set_pos(0, -10, 3)  # Отодвинули основную камеру
+        self.camera.set_pos(0, -10, 3)
         self.camera.look_at(self.model)
         self.model.set_scale(2)
 
@@ -425,7 +392,7 @@ class MyApp(ShowBase):
         self.accept("control-wheel_down", self.on_preview_zoom_out)
 
         # Настройки превью-камеры
-        self.preview_cam_distance = 1.5  # Ближе к объекту
+        self.preview_cam_distance = 1.5
         self.preview_cam_min_distance = 0.5
         self.preview_cam_max_distance = 3.0
         self.preview_cam_zoom_speed = 1.0
@@ -439,26 +406,67 @@ class MyApp(ShowBase):
         # GUI элементы
         self.setup_gui(font)
 
+    def create_menu_panel(self):
+        # Создаем панель меню (изначально скрытую)
+        self.menu_panel = DirectFrame(
+            parent=self.aspect2d,
+            frameColor=(0.1, 0.1, 0.15, 0.95),
+            frameSize=(-5, 5, -3, 3),
+            pos=(0, 0, 0),
+            state=DirectGui.DGG.NORMAL
+        )
+
+
 
     def setup_gui(self, font):
-        # Нижняя панель с названием сценария
         self.bottom_panel = DirectFrame(
-            frameColor=(0.1, 0.1, 0.1, 0.7),
+            frameColor=(0.1, 0.1, 0.1, 0.9),  # Более непрозрачная
             frameSize=(-1.5, 1.5, -0.15, 0.15),
             pos=(0, 0, -0.85),
-        )
-        self.left_panel = DirectFrame(
-            frameColor=(0.1, 0.1, 0.1, 0.7),
-            frameSize=(-0.8, 0.8, -0.65, 0.65),
-            pos=(-1.75,0, 0.35),
+            relief=DirectGui.DGG.SUNKEN,  # Добавляем рельеф
+            borderWidth=(0.01, 0.01),  # Тонкая рамка
+            state=DirectGui.DGG.NORMAL
         )
 
+        self.main_menu_btn = DirectButton(
+            parent=self.aspect2d,
+            text="Главное меню",
+            text_font=font,
+            text_fg=(1, 1, 1, 1),
+            frameColor=(0.08, 0.08, 0.12, 0.85),  # основной цвет
+            frameSize=(-4, 4, -0.9, 0.9),  # чуть шире (с учетом scale)
+            scale=0.04,
+            pos=(-1.5, 0, 0.9),  # правый верхний угол
+            relief=1,
+            borderWidth=(0.015, 0.015),
+            text_align=TextNode.A_center,
+            pressEffect=1,
+            rolloverSound=None,
+            clickSound=None,
+            #command=self.show_menu_panel
+        )
+        self.main_menu_btn.setTransparency(True)
+
+
+        # Левая панель с градиентным эффектом
+        self.left_panel = DirectFrame(
+            frameColor=(0.08, 0.08, 0.12, 0.85),
+            frameSize=(-0.8, 0.74, -0.57, 0.36),
+            pos=(-1.75, 0, 0.35),
+            relief=DirectGui.DGG.RAISED,  # Рельефная рамка
+            borderWidth=(0.015, 0.015),  # Более толстая рамка
+            state=DirectGui.DGG.NORMAL
+        )
+
+        # Метка сценария с тенью
         self.scenario_label = DirectLabel(
             parent=self.bottom_panel,
-            text="Подача воды от цистерны ",
+            text="Подача воды от цистерны",
             text_font=font,
             text_align=TextNode.A_center,
             text_fg=(1, 1, 1, 1),
+            text_shadow=(0, 0, 0, 0.7),  # Тень текста
+            text_shadowOffset=(0.08, 0.08),
             frameColor=(0, 0, 0, 0),
             scale=0.06,
             pos=(0, 0, 1.75))
@@ -513,14 +521,143 @@ class MyApp(ShowBase):
             scale=0.05,
             pos=(0, 0, -0.75),
             relief=1,
-            command=self.start_scenario)
+            #command=self.first_scenario)
+            command=self.start_selected_scenario)
 
+    def start_selected_scenario(self):
+        """Запускает выбранный сценарий через лямбда-функции"""
+        if self.current_scenario == 0:
+            self.start_first_scenario()
+        else:
+            self.start_second_scenario()
+
+    def start_first_scenario(self):
+        """Подача воды от цистерны (лямбда-реализация)"""
+        self.training_mode = True
+        self.auto_mode = True
+
+        scenario_sequence = [
+            (lambda: self._execute_step("Выключите сцепление из насосного отсека",
+                                        lambda: self.rotate_valve1(1))),
+            (lambda: self._execute_step("Откройте задвижку «На лафетный ствол»",
+                                        lambda: self.rotate_valve5(1))),
+            (lambda: self._execute_step("Откройте задвижку «Из цистерны»",
+                                        lambda: self.rotate_valve4(1))),
+            (lambda: self._execute_step("Закройте задвижку «На лафетный ствол»",
+                                        lambda: self.rotate_valve5(-1))),
+            (lambda: self._execute_step("Включите сцепление",
+                                        lambda: self.rotate_valve1(1))),
+            (lambda: self._execute_step("Откройте напорную задвижку",
+                                        lambda: self.rotate_valve2(1))),
+            (lambda: self._execute_step("Доведите давление до 6 атм.",
+                                        lambda: self.rotate_valve6(1)))
+        ]
+
+        self._execute_sequence(scenario_sequence)
+
+    def start_second_scenario(self):
+        """Второй сценарий (пример)"""
+        self.training_mode = True
+        self.auto_mode = True
+
+        scenario_sequence = [
+            (lambda: self._execute_step("Выключите сцепление из насосного отсека",
+                                        lambda: self.rotate_valve1(1))),
+            (lambda: self._execute_step("Откройте задвижку «На лафетный ствол»",
+                                        lambda: self.rotate_valve5(1))),
+        ]
+
+        self._execute_sequence(scenario_sequence)
+
+    def _execute_step(self, message, action):
+        """Выполняет один шаг сценария"""
+        self.step_label['text'] = message
+        action()
+
+    def _execute_sequence(self, sequence, index=0):
+        """Рекурсивно выполняет последовательность шагов"""
+        if index >= len(sequence):
+            self.step_label['text'] = "Сценарий завершен!"
+            self.training_mode = False
+            self.auto_mode = False
+            return
+
+        # Выполняем текущий шаг
+        sequence[index]()
+
+        # Планируем следующий шаг через 5.5 секунд (5 сек анимация + 0.5 сек запас)
+        if index + 1 < len(sequence):
+            self.taskMgr.do_method_later(
+                5.5,
+                self._execute_sequence,
+                f"scenario_step_{index}",
+                extraArgs=[sequence, index + 1]
+            )
+
+    def add_decorative_elements(self):
+        # Улучшенные разделители с градиентом
+        divider = DirectFrame(
+            parent=self.bottom_panel,
+            frameSize=(-1.55, 1.55, -0.005, 0.005),
+            frameColor=(0.4, 0.6, 1.0, 0.8),  # Более яркий цвет
+            pos=(0, 0, 0.12)
+        )
+
+        # Добавляем второй разделитель для симметрии
+        divider_bottom = DirectFrame(
+            parent=self.bottom_panel,
+            frameSize=(-1.55, 1.55, -0.003, 0.003),
+            frameColor=(0.3, 0.5, 0.8, 0.6),
+            pos=(0, 0, -0.1)
+        )
+
+        # Угловые акценты с анимационным потенциалом
+        corner_size = 0.12
+        corner_color = (0.4, 0.6, 1.0, 0.5)  # Более яркий цвет
+
+        # Создаем угловые элементы с разными стилями
+        corner_styles = [
+            {"frameColor": corner_color, "borderWidth": (0.01, 0.01)},
+            {"frameColor": (0.8, 0.9, 1.0, 0.4), "relief": DirectGui.DGG.RAISED},
+            {"frameColor": (0.2, 0.4, 0.8, 0.6), "relief": DirectGui.DGG.SUNKEN},
+            {"frameColor": corner_color, "borderWidth": (0.01, 0.01)}
+        ]
+
+        positions = [(-1, 1), (1, 1), (-1, -1), (1, -1)]
+
+        for (x, y), style in zip(positions, corner_styles):
+            corner = DirectFrame(
+                parent=self.left_panel,
+                frameSize=(-corner_size, corner_size, -corner_size, corner_size),
+                pos=(x * 0.75, 0, y * 0.65),
+                **style
+            )
+
+        # Добавляем фоновую текстуру или узор
+        background_pattern = DirectFrame(
+            parent=self.left_panel,
+            frameSize=(-0.78, 0.78, -0.63, 0.63),
+            frameColor=(0.15, 0.15, 0.2, 0.3),
+            pos=(0, 0, 0)
+        )
 
     def create_preview_camera(self, object_name):
+        font = self.loader.load_font("arial.ttf")
+        """Создает камеру предпросмотра для указанного объекта"""
         if self.preview_buffer:
             self.destroy_preview_camera()
 
-        # Буфер предпросмотра
+        # Сначала попробуем найти по точному имени
+        target_node = self.model.find(f"**/{object_name}")
+
+        if target_node.is_empty() and object_name in self.logical_parts:
+            target_node = self.model.find(self.logical_parts[object_name])
+
+        if target_node.is_empty():
+            print(f"⚠️ Объект {object_name} не найден для предпросмотра")
+            return
+
+        # Создаем буфер рендеринга
         win_props = WindowProperties.size(500, 500)
         fb_props = FrameBufferProperties()
         fb_props.set_rgba_bits(8, 8, 8, 8)
@@ -535,7 +672,7 @@ class MyApp(ShowBase):
         self.preview_texture = Texture()
         self.preview_buffer.add_render_texture(self.preview_texture, GraphicsOutput.RTMCopyRam)
 
-        # Линза предпросмотра
+        # Настраиваем камеру
         lens = OrthographicLens()
         lens.set_film_size(0.4, 0.4)
 
@@ -543,38 +680,59 @@ class MyApp(ShowBase):
         self.preview_cam_np = NodePath(preview_cam)
         self.preview_cam_np.reparent_to(render)
 
-        # 📍 Используем координаты из словаря
+        # Устанавливаем позицию камеры
         pos_data = self.preview_positions.get(object_name)
-        print(object_name)
         if pos_data:
             self.preview_cam_np.set_pos(pos_data["pos"])
             self.preview_cam_np.look_at(pos_data["look"])
         else:
-            print(f"⚠️ Нет позиции предпросмотра для: {object_name}")
+            # Автоматическое позиционирование, если позиция не задана
+            bounds = target_node.get_bounds()
+            if bounds.is_empty():
+                # Если не удалось получить границы, используем позицию объекта
+                center = target_node.get_pos(render)
+                radius = 1.0
+            else:
+                center = bounds.get_center()
+                radius = bounds.get_radius()
 
-        # Отображение карточки
+            self.preview_cam_np.set_pos(center + Vec3(0, -radius * 2, radius * 0.5))
+            self.preview_cam_np.look_at(center)
+
+
+        self.preview_label = DirectLabel(
+            parent=self.aspect2d,
+            text=f"Камера: {object_name}",
+            text_font = font,
+            text_fg=(1, 1, 1, 1),
+            frameColor=(0, 0, 0, 0),
+            scale=0.045,
+            pos=(-1.4, 0, 0.66),  # чуть выше preview_card
+            text_align=TextNode.A_center
+        )
+        # Создаем карточку для отображения
         cm = CardMaker("preview_card")
         cm.set_frame(-0.6, 0.6, -0.6, 0.6)
         self.preview_card = self.aspect2d.attach_new_node(cm.generate())
         self.preview_card.set_texture(self.preview_texture)
-        self.preview_card.set_pos(-1.4, 0, 0.7)
+        self.preview_card.set_pos(-1.44, 0, 0.2)
         self.preview_card.set_scale(0.7)
 
-        self.accept('wheel_up', self.on_preview_zoom_in, extraArgs=[object_name])
-        self.accept('wheel_down', self.on_preview_zoom_out, extraArgs=[object_name])
-
-
-
+        # Устанавливаем таймер на 5 секунд для автоматического закрытия
+        self.taskMgr.do_method_later(5, self.destroy_preview_camera, "DestroyPreviewCamera")
 
 
     def update_preview_camera_position(self, target_node):
-        """Обновляет позицию превью-камеры с текущим расстоянием"""
+        """Обновляет позицию превью-камеры"""
         if not self.preview_cam_np:
             return
 
-        # Позиция камеры - ближе к объекту и немного сверху
-        self.preview_cam_np.set_pos(target_node.get_pos(render) + Vec3(0, -self.preview_cam_distance, 0.3))
-        self.preview_cam_np.look_at(target_node)
+        bounds = target_node.get_bounds()
+        center = bounds.get_center()
+        radius = bounds.get_radius()
+
+        self.preview_cam_np.set_pos(center + Vec3(0, -self.preview_cam_distance * radius, radius * 0.3))
+        self.preview_cam_np.look_at(center)
 
     def on_preview_zoom_in(self, target_node):
         """Приближение превью-камеры"""
@@ -594,7 +752,13 @@ class MyApp(ShowBase):
             )
             self.update_preview_camera_position(target_node)
 
-    def destroy_preview_camera(self):
+    def destroy_preview_camera(self, task=None):
+
+        if self.preview_label:
+            self.preview_label.remove_node()
+            self.preview_label = None
+
+        """Уничтожает камеру предпросмотра"""
         if self.preview_buffer:
             self.preview_buffer.remove_all_display_regions()
             self.graphics_engine.remove_window(self.preview_buffer)
@@ -604,21 +768,10 @@ class MyApp(ShowBase):
             self.preview_card.remove_node()
             self.preview_card = None
 
-        # Восстанавливаем стандартные обработчики колесика
-        self.accept('wheel_up', self.on_zoom_in)
-        self.accept('wheel_down', self.on_zoom_out)
+        if task is not None:
 
-    def move_forward(self):
-        self.camera.set_y(self.camera, -self.camera_speed * globalClock.get_dt())
-
-    def move_backward(self):
-        self.camera.set_y(self.camera, self.camera_speed * globalClock.get_dt())
-
-    def move_left(self):
-        self.camera.set_x(self.camera, -self.camera_speed * globalClock.get_dt())
-
-    def move_right(self):
-        self.camera.set_x(self.camera, self.camera_speed * globalClock.get_dt())
+            return task.done
+        return None
 
     def set_ctrl_pressed(self, pressed):
         self.ctrl_pressed = pressed
@@ -639,144 +792,156 @@ class MyApp(ShowBase):
                 picked_np = picked_entry.get_into_node_path()
 
                 if picked_np.get_name() == "valve6_col" and not self.valve6_moving:
-                    # Обработка стрелки манометра
                     self.valve6_target_angle = (self.valve6_angle - 30) % 360
                     self.valve6_moving = True
+                    self.valve6_start_time = globalClock.getFrameTime()
                     self.create_preview_camera(self.valve6.name)
+                    self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
 
                 elif picked_np.get_name() == "valve5_col" and not self.valve5_moving:
-                    # Определяем направление движения (вперед/назад)
                     current_angle = self.valve5_pivot.get_p()
-                    if abs(current_angle) < 0.1:  # Если рычаг в начальном положении
+                    if abs(current_angle) < 0.1:
                         self.valve5_direction = 1
                     else:
                         self.valve5_direction = -1
 
                     self.valve5_moving = True
+                    self.valve5_start_time = globalClock.getFrameTime()
                     self.create_preview_camera(self.valve5.name)
                     self.taskMgr.add(self.move_valve5_task, "MoveValve5Task")
 
                 elif picked_np.get_name() == "valve4_col" and not self.valve4_moving:
-                    # Определяем направление движения (вперед/назад)
                     current_angle = self.valve4_pivot.get_r()
-                    if abs(current_angle) < 0.1:  # Если рычаг в начальном положении
+                    if abs(current_angle) < 0.1:
                         self.valve4_direction = 1
                     else:
                         self.valve4_direction = -1
 
                     self.valve4_moving = True
+                    self.valve4_start_time = globalClock.getFrameTime()
                     self.create_preview_camera(self.valve4.name)
-                    print(self.valve4.name)
                     self.taskMgr.add(self.move_valve4_task, "MoveValve4Task")
 
                 elif picked_np.get_name() == "plane14_col":
                     print("📌 Нажата кнопка plane14")
-                    self.create_preview_camera(self.plane14.name)  # Показать в предпросмотре
-
-                    # Визуальная подсветка (временно меняем цвет)
-                    self.plane14.set_color_scale(1, 1, 0.5, 1)  # жёлтоватая подсветка
+                    self.create_preview_camera(self.plane14.name)
+                    self.plane14.set_color_scale(1, 1, 0.5, 1)
                     self.taskMgr.do_method_later(0.3, self.reset_plane14_color, "ResetColor")
+
+                elif picked_np.get_name() == "valve2_col" and not self.valve2_moving:
+                    current_angle = self.valve2_pivot.get_r()
+                    if abs(current_angle) < 0.1:
+                        self.valve2_direction = 1
+                    else:
+                        self.valve2_direction = -1
+
+                    self.valve2_moving = True
+                    self.valve2_start_time = globalClock.getFrameTime()
+                    self.create_preview_camera(self.valve2.name)
+                    self.taskMgr.add(self.move_valve2_task, "MoveValve2Task")
+
+    def move_valve2_task(self, task):
+        if not hasattr(self, 'valve2_pivot') or not self.valve2_moving:
+            return task.done
+
+        elapsed = globalClock.getFrameTime() - self.valve2_start_time
+        progress = min(elapsed / 5, 1.0)
+
+        if self.valve2_direction > 0:
+            target_angle = self.valve2_target_angle
+        else:
+            target_angle = 0
+
+        new_angle = progress * target_angle
+        self.valve2_pivot.set_p(new_angle)
+
+        if progress >= 1.0:
+            self.valve2_moving = False
+            if self.training_mode:
+                self.on_step_completed()
+
+                self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+            return task.done
+
+        return task.cont
 
     def move_valve4_task(self, task):
         if not hasattr(self, 'valve4_pivot') or not self.valve4_moving:
             return task.done
 
-        speed = 90  # градусов в секунду
-        current_angle = self.valve4_pivot.get_r()
+        elapsed = globalClock.getFrameTime() - self.valve4_start_time
+        progress = min(elapsed / 5, 1.0)
 
-        # Определяем целевой угол в зависимости от направления
         if self.valve4_direction > 0:
             target_angle = self.valve4_target_angle
         else:
             target_angle = 0
 
-        # Плавное вращение
-        if abs(current_angle - target_angle) > 0.1:
-            delta = speed * globalClock.get_dt() * self.valve4_direction
-            new_angle = current_angle + delta
+        new_angle = progress * target_angle
+        self.valve4_pivot.set_r(new_angle)
 
-            # Ограничиваем угол, чтобы не выйти за пределы
-            if self.valve4_direction > 0:
-                new_angle = min(new_angle, target_angle)
-            else:
-                new_angle = max(new_angle, target_angle)
-
-            self.valve4_pivot.set_r(new_angle)
-            return task.cont
-        else:
-            self.valve4_pivot.set_r(target_angle)
+        if progress >= 1.0:
             self.valve4_moving = False
-
-            # Если в тренировочном режиме, переходим к следующему шагу
             if self.training_mode:
                 self.on_step_completed()
 
+                self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
             return task.done
+
+        return task.cont
 
     def move_valve5_task(self, task):
         if not hasattr(self, 'valve5_pivot') or not self.valve5_moving:
             return task.done
 
-        speed = 90  # градусов в секунду
-        current_angle = self.valve5_pivot.get_p()
+        elapsed = globalClock.getFrameTime() - self.valve5_start_time
+        progress = min(elapsed / 5, 1.0)
 
-        # Определяем целевой угол в зависимости от направления
-        if self.valve5_direction > 0:
-            target_angle = self.valve5_target_angle
-        else:
-            target_angle = 0
+        angle_change = progress * self.valve5_target_angle_change
+        new_angle = self.valve5_start_angle + angle_change
+        self.valve5_pivot.set_p(new_angle)
 
-        # Плавное вращение
-        if abs(current_angle - target_angle) > 0.1:
-            delta = speed * globalClock.get_dt() * self.valve5_direction
-            new_angle = current_angle + delta
-
-            # Ограничиваем угол, чтобы не выйти за пределы
-            if self.valve5_direction > 0:
-                new_angle = min(new_angle, target_angle)
-            else:
-                new_angle = max(new_angle, target_angle)
-
-            self.valve5_pivot.set_p(new_angle)
-            return task.cont
-        else:
-            self.valve5_pivot.set_p(target_angle)
+        if progress >= 1.0:
             self.valve5_moving = False
+            self.valve5_current_angle = new_angle
+            # Важно: сохраняем новое состояние
+            if self.valve5_direction > 0:
+                self.valve5_is_open = True
+            else:
+                self.valve5_is_open = False
 
-            # Если в тренировочном режиме, переходим к следующему шагу
             if self.training_mode:
                 self.on_step_completed()
 
+                self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
             return task.done
 
+        return task.cont
 
     def move_valve6_task(self, task):
         if not hasattr(self, 'valve6_pivot') or not hasattr(self, 'valve6'):
             return task.cont
 
-        if self.valve6_moving:  # Было valVe6
-            speed = 180  # градусов в секунду
-            delta = speed * globalClock.get_dt()
+        if self.valve6_moving:
+            elapsed = globalClock.getFrameTime() - self.valve6_start_time
+            progress = min(elapsed / 5, 1.0)
 
             current = self.valve6_angle
             target = self.valve6_target_angle
+            new_angle = current + (target - current) * progress
 
-            if abs(current - target) > 0.1:
-                # Плавное вращение к целевой позиции
-                if current < target:
-                    current = min(current + delta, target)
-                else:
-                    current = max(current - delta, target)
+            self.valve6_pivot.set_p(new_angle)
+            self.valve6_angle = new_angle
 
-                self.valve6_angle = current
-                # Изменено на set_h() для вращения как в часах
-                self.valve6_pivot.set_p(current)  # Вращение вокруг вертикальной оси Y
-            else:
+            if progress >= 1.0:
                 self.valve6_moving = False
-                self.valve6_angle = target
+                if self.training_mode:
+                    self.on_step_completed()
+
+                    self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+                return task.done
 
         return task.cont
-
 
     def on_mouse_up(self):
         self.prev_mouse_pos = None
@@ -856,40 +1021,181 @@ class MyApp(ShowBase):
             self.auto_mode = False
             self.update_scenario_display()
 
-    def start_scenario(self):
+    def start_scenario(self, scenario_index):
+        """Запускает сценарий с защитой от повторного входа"""
+        if self._scenario_running:
+            print("Сценарий уже выполняется!")
+            return
+
+        self.current_scenario = scenario_index
+        self._scenario_running = True
         self.training_mode = True
         self.auto_mode = True
         self.current_step = 0
         self.execute_current_step()
 
     def execute_current_step(self):
-        if not self.training_mode or not self.auto_mode:
+        """Выполняет текущий шаг с защитой от повторных вызовов"""
+        if not self._scenario_running:
             return
 
         scenario = self.scenarios[self.current_scenario]
-        if self.current_step < len(scenario['steps']):
-            step = scenario['steps'][self.current_step]
-            self.step_label['text'] = step['message']
 
-            if step['action'] == 'rotate_valve':
-                valve_num = step['valve']
-                direction = step['direction']
+        # Очищаем предыдущую задачу
+        if self._current_task:
+            taskMgr.remove(self._current_task)
+            self._current_task = None
 
-                if valve_num == 6:
-                    self.start_valve_spin(6)
-
-    def on_step_completed(self):
-        if not self.training_mode:
+        # Для сценариев-методов
+        if scenario.get('type') == 'method':
+            method = getattr(self, scenario['method'])
+            method()
             return
 
+        # Для пошаговых сценариев
+        if self.current_step >= len(scenario['steps']):
+            self._finish_scenario()
+            return
+
+        step = scenario['steps'][self.current_step]
+        self.step_label['text'] = step['message']
+
+        if step['action'] == 'rotate_valve':
+            valve_method = getattr(self, f'rotate_valve{step["valve"]}')
+            valve_method(step['direction'])
+
+            # Планируем следующий шаг с сохранением задачи
+            self._current_task = taskMgr.doMethodLater(
+                step['duration'],
+                self._next_step_handler,
+                "ScenarioStep"
+            )
+
+    def _next_step_handler(self, task):
+        """Обработчик перехода к следующему шагу"""
+        if not self._scenario_running:
+            return task.done
+
         self.current_step += 1
-        if self.current_step >= len(self.scenarios[self.current_scenario]['steps']):
-            self.step_label['text'] = "Сценарий завершен!"
+        self.execute_current_step()
+        return task.done
+
+    def _finish_scenario(self):
+        """Корректно завершает выполнение сценария"""
+        self._scenario_running = False
+        self.training_mode = False
+        self.auto_mode = False
+
+        if self._current_task:
+            taskMgr.remove(self._current_task)
+            self._current_task = None
+
+        self.step_label['text'] = "Сценарий завершен!"
+
+    def next_scenario_step(self, task):
+        """Переходит к следующему шагу сценария"""
+        self.current_step += 1
+        self.execute_current_step()
+        return task.done
+
+    def rotate_valve1(self, direction):
+        """Вращение вентиля 1"""
+        print(f"Вращаем вентиль 1, направление: {direction}")
+        if hasattr(self, 'plane14'):
+            self.plane14.set_color_scale(1, 1, 0.5, 1)
+            self.taskMgr.do_method_later(0.3, self.reset_plane14_color, "ResetColor")
+            self.create_preview_camera(self.plane14.name)
+            #time.sleep(5)
+            self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+
+    def rotate_valve2(self, direction):
+        """Вращение вентиля 2"""
+        print(f"Вращаем вентиль 2, направление: {direction}")
+        if hasattr(self, 'valve2_pivot'):
+            self.valve2_direction = direction
+            self.valve2_moving = True
+            self.valve2_start_time = globalClock.getFrameTime()
+            self.create_preview_camera(self.valve2.name)
+            self.taskMgr.add(self.move_valve2_task, "MoveValve2Task")
+
+    def rotate_valve3(self, direction):
+        if hasattr(self, 'valve3_pivot'):
+            self.valve3_direction = direction
+            self.valve3_moving = True
+            self.valve3_start_time = globalClock.getFrameTime()
+            self.create_preview_camera(self.valve3.name)
+            self.taskMgr.add(self.move_valve3_task, "MoveValve3Task")
+
+
+    def rotate_valve4(self, direction):
+        """Вращение вентиля 4 (рычаг)"""
+        print(f"Вращаем рычаг (вентиль 4), направление: {direction}")
+        if hasattr(self, 'valve4_pivot'):
+            self.valve4_direction = direction
+            self.valve4_moving = True
+            self.valve4_start_time = globalClock.getFrameTime()
+            self.create_preview_camera(self.valve4.name)
+            self.taskMgr.add(self.move_valve4_task, "MoveValve4Task")
+
+    def rotate_valve5(self, direction):
+        """Вращение вентиля 5 (рычаг)"""
+        print(f"Вращаем рычаг (вентиль 5), направление: {direction}")
+        if hasattr(self, 'valve5_pivot'):
+            # Если клапан уже в нужном положении - пропускаем анимацию
+            if (direction > 0 and hasattr(self, 'valve5_is_open') and self.valve5_is_open) or \
+                    (direction < 0 and hasattr(self, 'valve5_is_open') and not self.valve5_is_open):
+                self.on_step_completed()
+                return
+
+            if not hasattr(self, 'valve5_current_angle'):
+                self.valve5_current_angle = self.valve5_pivot.get_p()
+
+            self.valve5_direction = direction
+            self.valve5_moving = True
+            self.valve5_start_time = globalClock.getFrameTime()
+            self.valve5_start_angle = self.valve5_current_angle
+
+            if direction > 0:
+                self.valve5_target_angle_change = 85
+            else:
+                self.valve5_target_angle_change = -85
+
+            self.create_preview_camera(self.valve5.name)
+            self.taskMgr.add(self.move_valve5_task, "MoveValve5Task")
+
+    def rotate_valve6(self, direction):
+        """Вращение стрелки манометра (вентиль 6)"""
+        print(f"Вращаем стрелку манометра, направление: {direction}")
+        if hasattr(self, 'valve6_pivot'):
+            self.valve6_target_angle = (self.valve6_angle - 30 * direction) % 360
+            self.valve6_moving = True
+            self.valve6_start_time = globalClock.getFrameTime()
+
+            # Используем правильное имя объекта для превью
+            self.create_preview_camera("Manometr_Arrow")
+            self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
+
+    def on_step_completed(self):
+        """Обрабатывает завершение шага сценария"""
+        if not hasattr(self, 'current_scenario') or not hasattr(self, 'scenarios'):
+            return
+
+        scenario = self.scenarios[self.current_scenario]
+
+        # Для сценариев типа 'method' просто завершаем выполнение
+        if scenario.get('type') == 'method':
             self.training_mode = False
             self.auto_mode = False
-        else:
-            if self.auto_mode:
-                self.execute_current_step()
+            self.step_label['text'] = "Сценарий завершен!"
+            return
+
+        # Для пошаговых сценариев
+        if 'steps' in scenario:
+            self.current_step += 1
+            if self.current_step >= len(scenario['steps']):
+                self.training_mode = False
+                self.auto_mode = False
+                self.step_label['text'] = "Сценарий завершен!"
             else:
                 self.execute_current_step()
 
@@ -897,9 +1203,6 @@ class MyApp(ShowBase):
         if valve_num == 6 and not self.valve6_moving:
             self.valve6_moving = True
             self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
-
-
-
 
     def check_training_step(self, valve_num, direction):
         if not self.training_mode or self.auto_mode:
@@ -918,6 +1221,33 @@ class MyApp(ShowBase):
             else:
                 self.step_label['text'] = "Неверное действие! " + scenario['steps'][self.current_step]['message']
 
+
+
+    def execute_sequence(self, sequence, callback=None):
+        """Запускает выполнение последовательности действий"""
+        self._current_sequence = sequence
+        self._sequence_index = 0
+        self._sequence_callback = callback
+
+        # Запускаем первый шаг сразу
+        self._execute_next_sequence_step()
+
+    def _execute_sequence_step(self):
+        """Выполняет шаг последовательности"""
+        if self._sequence_index >= len(self._scenario_sequence):
+            self._finish_scenario()
+            return
+
+        action, delay, message = self._scenario_sequence[self._sequence_index]
+        self.step_label['text'] = message
+        action()
+
+        self._sequence_index += 1
+        self._current_task = taskMgr.doMethodLater(
+            delay,
+            self._execute_sequence_step,
+            "SequenceStep"
+        )
 
 app = MyApp()
 app.run()
