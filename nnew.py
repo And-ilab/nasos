@@ -43,6 +43,11 @@ class MyApp(ShowBase):
                 'type': 'method',
                 'method': 'second_scenario'
             },
+            {
+                'name': "АхахХхахахахха",
+                'type': 'method',
+                'method': 'third_scenario'
+            },
         ]
 
         offset = Vec3(1.1, 6, -0.3)
@@ -56,7 +61,7 @@ class MyApp(ShowBase):
                 "pos": Point3(-1.8, -3.0, 0.568012),
                 "look": Point3(-0.5, 1.0, 0.468012)
             },
-            "Manometr_Arrow": {
+            "Манометр": {
                 "pos": Point3(0.281166, -1.5, 0.568012),
                 "look": Point3(0.281166 - 0.2, 0.26543, 0.468012)
             },
@@ -83,10 +88,11 @@ class MyApp(ShowBase):
         render.set_light(render.attach_new_node(alight))
 
         # Загрузка модели
-        self.model = self.loader.load_model("111.glb")
+        self.model = self.loader.load_model("Untitled.glb")
         self.model.reparent_to(self.render)
         self.model.set_scale(1)
         self.cam.look_at(self.model)
+
 
         self.ctrl_pressed = False
         self.accept('control', self.set_ctrl_pressed, [True])
@@ -124,6 +130,7 @@ class MyApp(ShowBase):
         else:
             print("✅ кнопка найдена")
             self.plane14 = plane14
+            self.plane14.name = "Манометр"
 
             min_b, max_b = self.plane14.get_tight_bounds()
             center = (min_b + max_b) * 0.5
@@ -146,29 +153,38 @@ class MyApp(ShowBase):
             print(f"Позиция коллизии (мир): {self.plane14_col_np.get_pos(render)}")
             print(f"Масштаб коллизии: {self.plane14_col_np.get_scale()}")
 
+
+
         valve2_geom = self.model.find("**/COMPOUND1")
         point5 = self.model.find("**/point5")
-        if valve2_geom.is_empty():
-            print("❌ Рычаг не найден!")
-        else:
-            print("✅ Рыча~~г найден")
 
+        if valve2_geom.is_empty() or point5.is_empty():
+            print("❌ Вентиль 2 или точка вращения не найдены!")
+        else:
+            print("✅ Вентиль 2 и точка вращения найдены")
+
+            # Сохраняем оригинальную трансформацию
             original_mat = valve2_geom.get_mat(self.model)
             pivot_pos = point5.get_pos(self.model)
             valve2_pos = valve2_geom.get_pos(self.model)
 
+            # Создаем иерархию для вращения
             self.valve2_root = self.model.attach_new_node("valve2_root")
             self.valve2_root.set_pos(pivot_pos)
 
+
             self.valve2_pivot = self.valve2_root.attach_new_node("valve2_pivot")
 
-            valve2_geom.reparent_to(self.valve2_pivot)
+            # Переносим геометрию с сохранением трансформации
+            valve2_geom.wrt_reparent_to(self.valve2_pivot)
             self.valve2 = valve2_geom
             valve2_geom.set_mat(original_mat)
 
+            # Устанавливаем относительную позицию
             relative_pos = valve2_pos - pivot_pos
             valve2_geom.set_pos(relative_pos)
 
+            # Настройка коллизии
             saved_pos = valve2_geom.get_pos()
             valve2_geom.set_pos(0, 0, 0)
 
@@ -186,8 +202,9 @@ class MyApp(ShowBase):
             self.valve2_col_np.show()
 
             valve2_geom.set_pos(saved_pos)
-
-            self.valve2_pivot.set_p(0)
+            self.valve2.name = 'Левая затворная задвижка'
+            # Настройки вращения (как у valve13)
+            self.valve2_pivot.set_p(0)  # Сброс начального угла
             self.valve2_target_angle = 90
             self.valve2_moving = False
             self.valve2_direction = 1
@@ -206,6 +223,7 @@ class MyApp(ShowBase):
             original_mat = valve4_geom.get_mat(self.model)
             pivot_pos = pivot_node.get_pos(self.model)
             valve4_pos = valve4_geom.get_pos(self.model)
+
 
             self.valve4_root = self.model.attach_new_node("valve4_root")
             self.valve4_root.set_pos(pivot_pos)
@@ -241,11 +259,71 @@ class MyApp(ShowBase):
             self.valve4_target_angle = 85
             self.valve4_moving = False
             self.valve4_direction = 1
-
+            self.valve4.name = "Задвижка «Из цистерны»"
             print(f"Позиция корня: {self.valve4_root.get_pos(render)}")
             print(f"Позиция pivot: {self.valve4_pivot.get_pos(render)}")
             print(f"Позиция геометрии: {valve4_geom.get_pos(render)}")
             print(f"Границы коллизии: {min_b} - {max_b}")
+
+        valve13_geom = self.model.find("**/COMPOUND5")
+        point13 = self.model.find("**/point3")
+        if point13.is_empty():
+            print("❌ point11 не найден!")
+        else:
+            print(f"✅ point11 позиция: {point13.get_pos(render)}")
+
+        if valve13_geom.is_empty():
+            print("❌ Рычаг1 не найден!")
+        else:
+            print(f"✅ Рычаг 1позиция: {point13.get_pos(render)}")
+            self.valve13_moving = False
+
+        if valve13_geom.is_empty():
+            print("❌ Рычаг не найден!")
+        else:
+            print("✅ Рыча~~г найден")
+
+            original_mat = valve13_geom.get_mat(self.model)
+            pivot_pos = point13.get_pos(self.model)
+            valve13_pos = valve13_geom.get_pos(self.model)
+
+
+            self.valve13_root = self.model.attach_new_node("valve13_root")
+            self.valve13_root.set_pos(pivot_pos)
+
+            self.valve13_pivot = self.valve13_root.attach_new_node("valve13_pivot")
+
+            valve13_geom.reparent_to(self.valve13_pivot)
+            self.valve13 = valve13_geom
+            valve13_geom.set_mat(original_mat)
+
+            relative_pos = valve13_pos - pivot_pos
+            valve13_geom.set_pos(relative_pos)
+
+            saved_pos = valve13_geom.get_pos()
+            valve13_geom.set_pos(0, 0, 0)
+
+            min_b, max_b = valve13_geom.get_tight_bounds()
+            center = (min_b + max_b) * 0.5
+            extent = (max_b - min_b) * 0.5
+            extent *= 200
+
+            cnode = CollisionNode("valve13_col")
+            cnode.add_solid(CollisionBox(center, extent.x, extent.y, extent.z))
+            cnode.set_from_collide_mask(BitMask32.bit(1))
+            cnode.set_into_collide_mask(BitMask32.bit(1))
+
+            self.valve13_col_np = valve13_geom.attach_new_node(cnode)
+            self.valve13_col_np.show()
+
+            valve13_geom.set_pos(saved_pos)
+
+            self.valve13_pivot.set_p(0)
+            self.valve13_target_angle = 90
+            self.valve13_moving = False
+            self.valve13_direction = 1
+            self.valve13.name = "Задвижка в Цистерну"
+
 
         valve5_geom = self.model.find("**/COMPOUND2")
         if valve5_geom.is_empty():
@@ -261,6 +339,7 @@ class MyApp(ShowBase):
             original_mat = valve5_geom.get_mat(self.model)
             pivot_pos = pivot_node.get_pos(self.model)
             valve5_pos = valve5_geom.get_pos(self.model)
+
 
             self.valve5_root = self.model.attach_new_node("valve5_root")
             self.valve5_root.set_pos(pivot_pos)
@@ -291,7 +370,7 @@ class MyApp(ShowBase):
             self.valve5_col_np.show()
 
             valve5_geom.set_pos(saved_pos)
-
+            self.valve5.name = "Задвижка на Лафетный ствол"
             self.valve5_pivot.set_p(0)
             self.valve5_target_angle = 85
             self.valve5_moving = False
@@ -333,6 +412,7 @@ class MyApp(ShowBase):
             self.valve6 = valve6_geom
             relative_pos = valve6_world - pivot_world
             valve6_geom.set_pos(relative_pos)
+            self.valve6_pivot.set_p(41.3)  # H (heading) — ось Z
 
             tmp_node = self.valve6_pivot.attach_new_node("tmp_for_bounds")
             valve6_geom.instance_to(tmp_node)
@@ -357,6 +437,7 @@ class MyApp(ShowBase):
             self.valve6_col_np.show()
 
             self.valve6_angle = 0
+            self.valve6_start_angle = 0
             self.valve6_target_angle = 0
             self.valve6_moving = False
 
@@ -528,8 +609,13 @@ class MyApp(ShowBase):
         """Запускает выбранный сценарий через лямбда-функции"""
         if self.current_scenario == 0:
             self.start_first_scenario()
-        else:
+        if self.current_scenario == 1:
             self.start_second_scenario()
+        if self.current_scenario == 2:
+            self.start_third_scenario()
+        if self.current_scenario == 3:
+            self.start_second_scenario()
+
 
     def start_first_scenario(self):
         """Подача воды от цистерны (лямбда-реализация)"""
@@ -547,10 +633,13 @@ class MyApp(ShowBase):
                                         lambda: self.rotate_valve5(-1))),
             (lambda: self._execute_step("Включите сцепление",
                                         lambda: self.rotate_valve1(1))),
+            (lambda: self._execute_step("Включите сцепление(стрелка манометра поднимается до 3атм)",
+                                        lambda: self.rotate_valve1_with_camera(1))),
             (lambda: self._execute_step("Откройте напорную задвижку",
                                         lambda: self.rotate_valve2(1))),
-            (lambda: self._execute_step("Доведите давление до 6 атм.",
-                                        lambda: self.rotate_valve6(1)))
+            (lambda: self._execute_step("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
+                                        lambda: self.rotate_valve2(1))),
+
         ]
 
         self._execute_sequence(scenario_sequence)
@@ -565,6 +654,19 @@ class MyApp(ShowBase):
                                         lambda: self.rotate_valve1(1))),
             (lambda: self._execute_step("Откройте задвижку «На лафетный ствол»",
                                         lambda: self.rotate_valve5(1))),
+            (lambda: self._execute_step("тест.",
+                                        lambda: self.rotate_valve13(1)))
+        ]
+
+        self._execute_sequence(scenario_sequence)
+
+    def start_third_scenario(self):
+        self.training_mode = True
+        self.auto_mode = True
+
+        scenario_sequence = [
+            (lambda: self._execute_step("Выключите сцепление из насосного отсека",
+                                        lambda: self.rotate_valve6(1))),
         ]
 
         self._execute_sequence(scenario_sequence)
@@ -641,20 +743,28 @@ class MyApp(ShowBase):
             pos=(0, 0, 0)
         )
 
-    def create_preview_camera(self, object_name):
+    def create_preview_camera(self, object_name, is_bottom=False):
+        """Создает камеру предпросмотра с раздельными буферами"""
         font = self.loader.load_font("arial.ttf")
-        """Создает камеру предпросмотра для указанного объекта"""
-        if self.preview_buffer:
-            self.destroy_preview_camera()
 
-        # Сначала попробуем найти по точному имени
+        # Определяем атрибуты для верхней/нижней камеры
+        buffer_attr = 'preview_buffer_bottom' if is_bottom else 'preview_buffer_top'
+        texture_attr = 'preview_texture_bottom' if is_bottom else 'preview_texture_top'
+        card_attr = 'preview_card_bottom' if is_bottom else 'preview_card_top'
+        label_attr = 'preview_label_bottom' if is_bottom else 'preview_label_top'
+        cam_np_attr = 'preview_cam_np_bottom' if is_bottom else 'preview_cam_np_top'
+
+        # Удаляем предыдущую камеру того же типа
+        if getattr(self, buffer_attr, None):
+            getattr(self, buffer_attr).remove_all_display_regions()
+            self.graphicsEngine.remove_window(getattr(self, buffer_attr))
+
+        # Поиск целевого объекта
         target_node = self.model.find(f"**/{object_name}")
-
         if target_node.is_empty() and object_name in self.logical_parts:
             target_node = self.model.find(self.logical_parts[object_name])
-
         if target_node.is_empty():
-            print(f"⚠️ Объект {object_name} не найден для предпросмотра")
+            print(f"⚠️ Объект {object_name} не найден")
             return
 
         # Создаем буфер рендеринга
@@ -663,63 +773,82 @@ class MyApp(ShowBase):
         fb_props.set_rgba_bits(8, 8, 8, 8)
         fb_props.set_depth_bits(24)
 
-        self.preview_buffer = self.graphicsEngine.make_output(
-            self.pipe, "PreviewBuffer", -2,
+        buffer = self.graphicsEngine.make_output(
+            self.pipe, f"PreviewBuffer_{'bottom' if is_bottom else 'top'}", -2,
             fb_props, win_props,
             GraphicsPipe.BF_refuse_window,
             self.win.get_gsg(), self.win)
 
-        self.preview_texture = Texture()
-        self.preview_buffer.add_render_texture(self.preview_texture, GraphicsOutput.RTMCopyRam)
+        setattr(self, buffer_attr, buffer)
 
-        # Настраиваем камеру
+        # Создаем и настраиваем текстуру
+        texture = Texture()
+        buffer.add_render_texture(texture, GraphicsOutput.RTMCopyRam)
+        setattr(self, texture_attr, texture)
+
+        # Настройка камеры
         lens = OrthographicLens()
         lens.set_film_size(0.4, 0.4)
+        preview_cam = self.make_camera(buffer, lens=lens)
+        cam_np = NodePath(preview_cam)
+        cam_np.reparent_to(render)
+        setattr(self, cam_np_attr, cam_np)
 
-        preview_cam = self.make_camera(self.preview_buffer, lens=lens)
-        self.preview_cam_np = NodePath(preview_cam)
-        self.preview_cam_np.reparent_to(render)
-
-        # Устанавливаем позицию камеры
+        # Позиционирование камеры
         pos_data = self.preview_positions.get(object_name)
         if pos_data:
-            self.preview_cam_np.set_pos(pos_data["pos"])
-            self.preview_cam_np.look_at(pos_data["look"])
+            cam_np.set_pos(pos_data["pos"])
+            cam_np.look_at(pos_data["look"])
         else:
-            # Автоматическое позиционирование, если позиция не задана
             bounds = target_node.get_bounds()
-            if bounds.is_empty():
-                # Если не удалось получить границы, используем позицию объекта
-                center = target_node.get_pos(render)
-                radius = 1.0
-            else:
-                center = bounds.get_center()
-                radius = bounds.get_radius()
+            center = bounds.get_center() if not bounds.is_empty() else target_node.get_pos(render)
+            radius = bounds.get_radius() if not bounds.is_empty() else 1.0
+            cam_np.set_pos(center + Vec3(0, -radius * 2, radius * 0.5))
+            cam_np.look_at(center)
 
-            self.preview_cam_np.set_pos(center + Vec3(0, -radius * 2, radius * 0.5))
-            self.preview_cam_np.look_at(center)
+        # Создаем карточку для отображения
+        cm = CardMaker(f"{'bottom_' if is_bottom else 'top_'}preview_card")
+        cm.set_frame(-0.48, 0.48, -0.48, 0.48)
 
+        card = self.aspect2d.attach_new_node(cm.generate())
+        card.set_texture(texture)
+        card.set_pos(-1.55, 0, -0.28 if is_bottom else 0.47)  # Нижняя карточка смещена вниз
+        card.set_scale(0.7)
+        setattr(self, card_attr, card)
 
-        self.preview_label = DirectLabel(
+        # Создаем подпись
+        label = DirectLabel(
             parent=self.aspect2d,
-            text=f"Камера: {object_name}",
-            text_font = font,
+            text=f"{'Нижняя' if is_bottom else 'Верхняя'} камера: {object_name}",
+            text_font=font,
             text_fg=(1, 1, 1, 1),
             frameColor=(0, 0, 0, 0),
             scale=0.045,
-            pos=(-1.4, 0, 0.66),  # чуть выше preview_card
+            pos=(-1.55, 0, 0.07 if is_bottom else 0.78),  # Позиционируем подписи
             text_align=TextNode.A_center
         )
-        # Создаем карточку для отображения
-        cm = CardMaker("preview_card")
-        cm.set_frame(-0.6, 0.6, -0.6, 0.6)
-        self.preview_card = self.aspect2d.attach_new_node(cm.generate())
-        self.preview_card.set_texture(self.preview_texture)
-        self.preview_card.set_pos(-1.44, 0, 0.2)
-        self.preview_card.set_scale(0.7)
+        setattr(self, label_attr, label)
 
-        # Устанавливаем таймер на 5 секунд для автоматического закрытия
-        self.taskMgr.do_method_later(5, self.destroy_preview_camera, "DestroyPreviewCamera")
+        # Таймер закрытия
+        self.taskMgr.do_method_later(5, lambda task: self.destroy_preview_camera(is_bottom),
+                                     f"DestroyPreviewCamera_{'bottom' if is_bottom else 'top'}")
+
+    def destroy_preview_camera(self, is_bottom=False):
+        """Уничтожает указанную камеру предпросмотра"""
+        buffer_attr = 'preview_buffer_bottom' if is_bottom else 'preview_buffer_top'
+        card_attr = 'preview_card_bottom' if is_bottom else 'preview_card_top'
+        label_attr = 'preview_label_bottom' if is_bottom else 'preview_label_top'
+        cam_np_attr = 'preview_cam_np_bottom' if is_bottom else 'preview_cam_np_top'
+
+        if getattr(self, buffer_attr, None):
+            getattr(self, buffer_attr).remove_all_display_regions()
+            self.graphicsEngine.remove_window(getattr(self, buffer_attr))
+            setattr(self, buffer_attr, None)
+
+        for attr in [card_attr, label_attr, cam_np_attr]:
+            if hasattr(self, attr):
+                getattr(self, attr).remove_node()
+                delattr(self, attr)
 
 
     def update_preview_camera_position(self, target_node):
@@ -752,26 +881,7 @@ class MyApp(ShowBase):
             )
             self.update_preview_camera_position(target_node)
 
-    def destroy_preview_camera(self, task=None):
 
-        if self.preview_label:
-            self.preview_label.remove_node()
-            self.preview_label = None
-
-        """Уничтожает камеру предпросмотра"""
-        if self.preview_buffer:
-            self.preview_buffer.remove_all_display_regions()
-            self.graphics_engine.remove_window(self.preview_buffer)
-            self.preview_buffer = None
-
-        if self.preview_card:
-            self.preview_card.remove_node()
-            self.preview_card = None
-
-        if task is not None:
-
-            return task.done
-        return None
 
     def set_ctrl_pressed(self, pressed):
         self.ctrl_pressed = pressed
@@ -920,26 +1030,52 @@ class MyApp(ShowBase):
 
     def move_valve6_task(self, task):
         if not hasattr(self, 'valve6_pivot') or not hasattr(self, 'valve6'):
-            return task.cont
+            return task.done  # Используем done вместо cont
 
         if self.valve6_moving:
             elapsed = globalClock.getFrameTime() - self.valve6_start_time
-            progress = min(elapsed / 5, 1.0)
+            progress = min(elapsed / 2.0, 1.0)  # Уменьшил время до 1 секунды
 
-            current = self.valve6_angle
-            target = self.valve6_target_angle
-            new_angle = current + (target - current) * progress
+            # Плавная интерполяция угла
+            start_angle = self.valve6_start_angle  # Новый атрибут для сохранения начального угла
+            target_angle = self.valve6_target_angle
+            new_angle = start_angle + (target_angle) * progress
 
-            self.valve6_pivot.set_p(new_angle)
-            self.valve6_angle = new_angle
+            # Вращение вокруг оси Z (горизонтальное)
+            self.valve6_pivot.set_p(-new_angle)  # Отрицательное значение для правильного направления
 
             if progress >= 1.0:
                 self.valve6_moving = False
+                self.valve6_angle = target_angle  # Сохраняем конечный угол
                 if self.training_mode:
                     self.on_step_completed()
-
                     self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
                 return task.done
+
+        return task.cont
+
+    def move_valve13_task(self, task):
+        if not hasattr(self, 'valve13_pivot') or not self.valve13_moving:
+            return task.done
+
+        elapsed = globalClock.getFrameTime() - self.valve13_start_time
+        progress = min(elapsed / 5, 1.0)
+
+        if self.valve13_direction > 0:
+            target_angle = self.valve13_target_angle
+        else:
+            target_angle = 0
+
+        new_angle = progress * target_angle
+        self.valve13_pivot.set_p(new_angle)
+
+        if progress >= 1.0:
+            self.valve13_moving = False
+            if self.training_mode:
+                self.on_step_completed()
+
+                self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+            return task.done
 
         return task.cont
 
@@ -1108,6 +1244,20 @@ class MyApp(ShowBase):
             #time.sleep(5)
             self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
 
+    def rotate_valve1_with_camera(self, direction):
+        """Вращение вентиля с двумя камерами"""
+        print(f"Вращаем вентиль 1, направление: {direction}")
+        if hasattr(self, 'plane14'):
+            self.plane14.set_color_scale(1, 1, 0.5, 1)
+            self.taskMgr.do_method_later(0.3, self.reset_plane14_color, "ResetColor")
+
+            # Создаем обе камеры
+            self.create_preview_camera(self.plane14.name, is_bottom=False)
+            self.create_preview_camera("Manometr_Arrow", is_bottom=True)
+
+            self.taskMgr.do_method_later(5.0, self.next_scenario_step, "DelayedNextStep")
+
+
     def rotate_valve2(self, direction):
         """Вращение вентиля 2"""
         print(f"Вращаем вентиль 2, направление: {direction}")
@@ -1167,13 +1317,28 @@ class MyApp(ShowBase):
         """Вращение стрелки манометра (вентиль 6)"""
         print(f"Вращаем стрелку манометра, направление: {direction}")
         if hasattr(self, 'valve6_pivot'):
-            self.valve6_target_angle = (self.valve6_angle - 30 * direction) % 360
+            if not hasattr(self, 'valve6_angle'):
+                self.valve6_angle = self.valve6_pivot.get_h()  # Инициализация при первом вызове
+
+            angle_change = 30 * (-1 if direction < 0 else 1)  # Умножаем на направление
+            self.valve6_target_angle = (self.valve6_angle + angle_change) % 360
+            self.valve6_start_angle = self.valve6_angle  # Сохраняем начальный угол
             self.valve6_moving = True
+            self.rotate_valve1_with_camera(self.valve13.name)
             self.valve6_start_time = globalClock.getFrameTime()
 
-            # Используем правильное имя объекта для превью
-            self.create_preview_camera("Manometr_Arrow")
             self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
+
+    def rotate_valve13(self, direction):
+        """Вращение вентиля 2"""
+        print(f"Вращаем вентиль 13, направление: {direction}")
+        if hasattr(self, 'valve13_pivot'):
+            self.valve13_direction = direction
+            self.valve13_moving = True
+            self.valve13_start_time = globalClock.getFrameTime()
+            self.create_preview_camera(self.valve13.name)
+            self.taskMgr.add(self.move_valve13_task, "MoveValve13Task")
+
 
     def on_step_completed(self):
         """Обрабатывает завершение шага сценария"""
@@ -1198,6 +1363,7 @@ class MyApp(ShowBase):
                 self.step_label['text'] = "Сценарий завершен!"
             else:
                 self.execute_current_step()
+
 
     def start_valve_spin(self, valve_num):
         if valve_num == 6 and not self.valve6_moving:
