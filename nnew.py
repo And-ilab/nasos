@@ -28,12 +28,10 @@ class MyApp(ShowBase):
         self.win.requestProperties(props)
         self.accept('escape', self.toggle_fullscreen)
 
-
         self.load_sounds()
 
         # Запуск фоновой музыки
         self.start_background_music()
-
 
         self.valve2_start_time = 0
         self.valve4_start_time = 0
@@ -42,7 +40,6 @@ class MyApp(ShowBase):
 
         self._scenario_running = False  # Флаг выполнения сценария
         self._current_task = None
-
 
         self.scenarios = [
             {
@@ -64,6 +61,26 @@ class MyApp(ShowBase):
                 'name': "Подача воды из цистерны через стационарный лафетный ствол",
                 'type': 'method',
                 'method': 'fourth_scenario'
+            },
+            {
+                'name': "Подача пены через стационарный лафетный ствол",
+                'type': 'method',
+                'method': 'fifth_scenario'
+            },
+            {
+                'name': "Подача пены на 1 ГПС-600",
+                'type': 'method',
+                'method': 'sifth_scenario'
+            },
+            {
+                'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (1 способ)",
+                'type': 'method',
+                'method': 'seven_scenario'
+            },
+            {
+                'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (2 способ)",
+                'type': 'method',
+                'method': 'eight_scenario'
             },
         ]
 
@@ -96,15 +113,19 @@ class MyApp(ShowBase):
             },
             "Задвижка «В цистерну»": {
                 "pos": Point3(0.281166 - 0.2, -1.5 - 0.6, 0.568012 - 0.2),
-                "look": Point3(0.281166 - 0.5, 0.26543-0.1, 0.468012 - 0.2)
+                "look": Point3(0.281166 - 0.5, 0.26543 - 0.1, 0.468012 - 0.2)
+            },
+            "Пеносмеситель": {
+                "pos": Point3(0.281166 - 1.0, -1.5 - 0.3, 0.568012 - 0.2),
+                "look": Point3(0.281166 - 0.8, 0.26543 - 0.1, 0.468012 - 0.2)
             },
             "Задвижка «Вакуумный кран»": {
                 "pos": Point3(0.281166 - 0.2, -1.5 - 0.6, 0.568012 - 0.2),
                 "look": Point3(0.281166 - 0.5, 0.26543 - 0.1, 0.468012 - 0.2)
             },
             "Тест": {
-                "pos": Point3(0.281166-1  , -7.5 , 2),
-                "look": Point3(0.281166-2.5 , 0.26543 , 0.267012 )
+                "pos": Point3(0.281166 - 1, -7.5, 2),
+                "look": Point3(0.281166 - 2.5, 0.26543, 0.267012)
             },
             "Пульт": {
                 "pos": Point3(-0.4, -5.5, 0.5),
@@ -118,11 +139,19 @@ class MyApp(ShowBase):
                 "pos": Point3(-0.45, -3.0, 0.768012),
                 "look": Point3(-0.45, 1.0, 0.768012)
             },
-            "Manovakuummetr_Arrow": {
-                "pos": Point3(0.281166 - 0.2, -1.5 - 0.6, 0.568012 - 0.65),
-                "look": Point3(0.281166 - 0.5, 0.26543-0.1, 0.468012 - 0.65)
+            "Забор ПО": {
+                "pos": Point3(-0.45 + 0.45, -3.0, 0.8),
+                "look": Point3(-0.45 + 0.45, 1.0, 0.8)
             },
 
+            "Manovakuummetr_Arrow": {
+                "pos": Point3(0.281166 - 0.2, -1.5 - 0.6, 0.568012 - 0.65),
+                "look": Point3(0.281166 - 0.5, 0.26543 - 0.1, 0.468012 - 0.65)
+            },
+            "Промывка пенодозатора": {
+                "pos": Point3(-0.45 + 0.75, -3.0, 0.4),
+                "look": Point3(-0.45 + 0.75, 1.0, 0.4)
+            },
         }
 
         for key in self.preview_positions:
@@ -138,11 +167,10 @@ class MyApp(ShowBase):
         render.set_light(render.attach_new_node(alight))
 
         # Загрузка модели
-        self.model = self.loader.load_model("1111.glb")
+        self.model = self.loader.load_model("2.glb")
         self.model.reparent_to(self.render)
         self.model.set_scale(1)
         self.cam.look_at(self.model)
-
 
         valve6_geom = self.model.find("**/Manometr_Arrow")
         point = self.model.find("**/point8")
@@ -182,8 +210,6 @@ class MyApp(ShowBase):
             bounds = self.plane14.get_tight_bounds()
             center = (bounds[0] + bounds[1]) * 0.5
 
-
-
         plane11 = self.model.find("**/plane11")
         if plane11.is_empty():
             print("❌ кнопка не найдена!")
@@ -191,13 +217,12 @@ class MyApp(ShowBase):
             print("✅ кнопка найдена")
             self.plane11 = plane11
             self.plane11.name = "Панель"
-           # self.plane14.set_color_scale(1, 0, 0, 1)
+            # self.plane14.set_color_scale(1, 0, 0, 1)
 
             min_b, max_b = self.plane11.get_tight_bounds()
             center = (min_b + max_b) * 0.5
             extent = (max_b - min_b) * 0.5
             extent *= 1000
-
 
         plane3 = self.model.find("**/plane3")
         if plane3.is_empty():
@@ -206,11 +231,6 @@ class MyApp(ShowBase):
             print("✅ кнопка найдена")
             self.plane3 = plane3
             self.plane3.name = "Пульт"
-
-
-
-
-
 
         valve2_geom = self.model.find("**/COMPOUND1")
         point5 = self.model.find("**/point5")
@@ -228,7 +248,6 @@ class MyApp(ShowBase):
             # Создаем иерархию для вращения
             self.valve2_root = self.model.attach_new_node("valve2_root")
             self.valve2_root.set_pos(pivot_pos)
-
 
             self.valve2_pivot = self.valve2_root.attach_new_node("valve2_pivot")
 
@@ -268,7 +287,6 @@ class MyApp(ShowBase):
             pivot_pos = pivot_node.get_pos(self.model)
             valve4_pos = valve4_geom.get_pos(self.model)
 
-
             self.valve4_root = self.model.attach_new_node("valve4_root")
             self.valve4_root.set_pos(pivot_pos)
 
@@ -283,7 +301,6 @@ class MyApp(ShowBase):
 
             saved_pos = valve4_geom.get_pos()
             valve4_geom.set_pos(0, 0, 0)
-
 
             valve4_geom.set_pos(saved_pos)
 
@@ -319,7 +336,6 @@ class MyApp(ShowBase):
             pivot_pos = point13.get_pos(self.model)
             valve13_pos = valve13_geom.get_pos(self.model)
 
-
             self.valve13_root = self.model.attach_new_node("valve13_root")
             self.valve13_root.set_pos(pivot_pos)
 
@@ -335,7 +351,6 @@ class MyApp(ShowBase):
             saved_pos = valve13_geom.get_pos()
             valve13_geom.set_pos(0, 0, 0)
 
-
             valve13_geom.set_pos(saved_pos)
 
             self.valve13_pivot.set_p(0)
@@ -344,7 +359,50 @@ class MyApp(ShowBase):
             self.valve13_direction = 1
             self.valve13.name = "Задвижка «В цистерну»"
 
+        valve44_geom = self.model.find("**/COMPOUND4")
+        point44 = self.model.find("**/point6")
+        if point44.is_empty():
+            print("❌ point11 не найден!")
+        else:
+            print(f"✅ point44 позиция: {point44.get_pos(render)}")
 
+        if valve44_geom.is_empty():
+            print("❌ Рычаг1 не найден!")
+        else:
+            print(f"✅ Рыча44 1позиция: {point44.get_pos(render)}")
+            self.valve44_moving = False
+
+        if valve44_geom.is_empty():
+            print("❌ Рычаг не найден!")
+        else:
+            print("✅ Рыча44г найден")
+
+            original_mat = valve44_geom.get_mat(self.model)
+            pivot_pos = point44.get_pos(self.model)
+            valve44_pos = valve44_geom.get_pos(self.model)
+
+            self.valve44_root = self.model.attach_new_node("valve44_root")
+            self.valve44_root.set_pos(pivot_pos)
+
+            self.valve44_pivot = self.valve44_root.attach_new_node("valve44_pivot")
+
+            valve44_geom.reparent_to(self.valve44_pivot)
+            self.valve44 = valve44_geom
+            valve44_geom.set_mat(original_mat)
+
+            relative_pos = valve44_pos - pivot_pos
+            valve44_geom.set_pos(relative_pos)
+
+            saved_pos = valve44_geom.get_pos()
+            valve44_geom.set_pos(0, 0, 0)
+
+            valve44_geom.set_pos(saved_pos)
+
+            self.valve44_pivot.set_p(0)
+            self.valve44_target_angle = 90
+            self.valve44_moving = False
+            self.valve44_direction = 1
+            self.valve44.name = "Пеносмеситель"
 
         valve8_geom = self.model.find("**/ COMPOUND8")
         point8 = self.model.find("**/point9.001")
@@ -377,7 +435,6 @@ class MyApp(ShowBase):
             saved_pos = valve8_geom.get_pos()
             valve8_geom.set_pos(0, 0, 0)
 
-
             valve8_geom.set_pos(saved_pos)
             self.valve8.name = "Вакуумный кран"
             self.valve8_pivot.set_p(0)
@@ -385,7 +442,81 @@ class MyApp(ShowBase):
             self.valve8_moving = False
             self.valve8_direction = 1
 
+        valve12_geom = self.model.find("**/COMPOUND12")
+        point12 = self.model.find("**/point9.004")
+        if valve12_geom.is_empty():
+            print("❌ 12Рычаг не найден!")
+        else:
+            print("✅ 12Рычаг найден")
 
+            pivot_node = self.model.find("**/point9.004")
+            if pivot_node.is_empty():
+                print("❌ 12Точка крепления не найдена!")
+                return
+
+            original_mat = valve12_geom.get_mat(self.model)
+            pivot_pos = pivot_node.get_pos(self.model)
+            valve12_pos = valve12_geom.get_pos(self.model)
+
+            self.valve12_root = self.model.attach_new_node("valve12_root")
+            self.valve12_root.set_pos(pivot_pos)
+
+            self.valve12_pivot = self.valve12_root.attach_new_node("valve12_pivot")
+
+            valve12_geom.reparent_to(self.valve12_pivot)
+            self.valve12 = valve12_geom
+            valve12_geom.set_mat(original_mat)
+
+            relative_pos = valve12_pos - pivot_pos
+            valve12_geom.set_pos(relative_pos)
+
+            saved_pos = valve12_geom.get_pos()
+            valve12_geom.set_pos(0, 0, 0)
+
+            valve12_geom.set_pos(saved_pos)
+            self.valve12.name = "Промывка пенодозатора"
+            self.valve12_pivot.set_p(0)
+            self.valve12_target_angle = 85
+            self.valve12_moving = False
+            self.valve12_direction = 1
+
+        valve111_geom = self.model.find("**/COMPOUND11")
+        point111 = self.model.find("**/point9.003")
+        if valve111_geom.is_empty():
+            print("❌ 888Рычаг не найден!")
+        else:
+            print("✅ 8Рычаг найден")
+
+            pivot_node = self.model.find("**/point9.003")
+            if pivot_node.is_empty():
+                print("❌ 11Точка крепления не найдена!")
+                return
+
+            original_mat = valve111_geom.get_mat(self.model)
+            pivot_pos = pivot_node.get_pos(self.model)
+            valve111_pos = valve111_geom.get_pos(self.model)
+
+            self.valve111_root = self.model.attach_new_node("valve111_root")
+            self.valve111_root.set_pos(pivot_pos)
+
+            self.valve111_pivot = self.valve111_root.attach_new_node("valve111_pivot")
+
+            valve111_geom.reparent_to(self.valve111_pivot)
+            self.valve111 = valve111_geom
+            valve111_geom.set_mat(original_mat)
+
+            relative_pos = valve111_pos - pivot_pos
+            valve111_geom.set_pos(relative_pos)
+
+            saved_pos = valve111_geom.get_pos()
+            valve111_geom.set_pos(0, 0, 0)
+
+            valve111_geom.set_pos(saved_pos)
+            self.valve111.name = "Забор ПО"
+            self.valve111_pivot.set_r(0)
+            self.valve111_target_angle = 85
+            self.valve111_moving = False
+            self.valve111_direction = 1
 
         valve5_geom = self.model.find("**/COMPOUND2")
         if valve5_geom.is_empty():
@@ -401,7 +532,6 @@ class MyApp(ShowBase):
             original_mat = valve5_geom.get_mat(self.model)
             pivot_pos = pivot_node.get_pos(self.model)
             valve5_pos = valve5_geom.get_pos(self.model)
-
 
             self.valve5_root = self.model.attach_new_node("valve5_root")
             self.valve5_root.set_pos(pivot_pos)
@@ -424,7 +554,6 @@ class MyApp(ShowBase):
             self.valve5_target_angle = 85
             self.valve5_moving = False
             self.valve5_direction = 1
-
 
         self.coord_display = OnscreenText(text="", pos=(-1.3, 0.9), fg=(1, 1, 0, 1), scale=0.05, align=TextNode.ALeft)
         self.coord_traverser = CollisionTraverser()
@@ -474,7 +603,7 @@ class MyApp(ShowBase):
             tmp_node.flatten_light()
 
             print("🧩 Добавляю задачу MoveValve6Task")
-#            self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
+        #            self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
 
         valve66_geom = self.model.find("**/Manovakuummetr_Arrow")
         if valve66_geom.is_empty():
@@ -505,14 +634,13 @@ class MyApp(ShowBase):
             self.valve66_pivot.set_p(0)
             # self.valve66_angle = 41.3
             # self.valve66_start_angle = 41.3
-            #self.valve66_target_angle = 41.3
+            # self.valve66_target_angle = 41.3
 
             tmp_node = self.valve66_pivot.attach_new_node("tmp_for_bounds")
             valve66_geom.instance_to(tmp_node)
 
             tmp_node.set_pos(0, 0, 0)
             tmp_node.flatten_light()
-
 
             # self.valve66_angle = 0
             # self.valve66_start_angle = 0
@@ -542,8 +670,7 @@ class MyApp(ShowBase):
         # Управление мышью
         self.prev_mouse_pos = None
         self.rotation_speed = 180
-       # self.disableMouse()#
-
+        # self.disableMouse()#
 
         self.preview_cam_distance = 1.5
         self.preview_cam_min_distance = 0.5
@@ -553,7 +680,6 @@ class MyApp(ShowBase):
         self.preview_buffer = None
         self.preview_card = None
         self.setup_gui(font)
-
 
     def load_sounds(self):
         """Загрузка всех звуковых ресурсов"""
@@ -569,7 +695,6 @@ class MyApp(ShowBase):
         self.sounds["s1_a2"] = loader.loadSfx("media/s1/audio4.mp3")
         self.sounds["s2_a1"] = loader.loadSfx("media/s2/audio1.mp3")
         self.sounds["s2_a2"] = loader.loadSfx("media/s2/audio2.mp3")
-
 
     def play_sound(self, sound_path, loop=False, volume=1.0):
         """Универсальная функция для воспроизведения звука"""
@@ -597,25 +722,15 @@ class MyApp(ShowBase):
         self.stop_sound("media/audio1.mp3")
         self.bg_music_playing = False
 
-
     def play_delayed_sound(task, sound_path):
         self.play_sound(sound_path)
         return task.done  # Завершаем задачу
-
-
-
-
-
 
     def toggle_fullscreen(self):
         props = WindowProperties()
         props.setFullscreen(not self.win.getProperties().getFullscreen())
         props.setCursorHidden(not props.getFullscreen())  # Показывать курсор в оконном режиме
         self.win.requestProperties(props)
-
-
-
-
 
     def start_blink(self, task):
         """Мигание plane11 (красный ↔ белый)"""
@@ -635,11 +750,11 @@ class MyApp(ShowBase):
 
         return task.cont  # продолжаем мигание
 
-    def stop_blink(self,task):
+    def stop_blink(self, task):
         """Запуск фоновой музыки"""
         self.plane11.set_color_scale(1, 1, 1, 1)  # белый / оригинал
         return task.done
-        #return task.cont
+        # return task.cont
 
     def toggle_background_music(self):
 
@@ -687,7 +802,6 @@ class MyApp(ShowBase):
             clickSound=None,
         )
         self.main_menu_btn.setTransparency(True)
-
 
         # Левая панель с градиентным эффектом
         self.left_panel = DirectFrame(
@@ -760,13 +874,29 @@ class MyApp(ShowBase):
             text_fg=(1, 1, 1, 1),
             frameColor=(0.2, 0.5, 0.2, 0.7),
             scale=0.05,
-            pos=(0, 0, -0.85),
+            pos=(0, 0, -0.75),
             relief=1,
-            #command=self.first_scenario)
+            # command=self.first_scenario)
             command=self.start_selected_scenario)
+
+        self.next_step_btn = DirectButton(
+            parent=self.aspect2d,
+            text="Следующий шаг",
+            text_font=font,
+            text_align=TextNode.A_center,
+            text_fg=(1, 1, 1, 1),
+            frameColor=(0.2, 0.5, 0.2, 0.7),
+            scale=0.05,
+            pos=(0, 0, -0.75),
+            relief=1,
+            command=self._execute_next_step)
+
+        self.next_step_btn.hide()
 
     def start_selected_scenario(self):
         self.start_btn.hide()
+        self.next_step_btn.show()
+
         """Запускает выбранный сценарий через лямбда-функции"""
         if self.current_scenario == 0:
             self.start_first_scenario()
@@ -776,35 +906,56 @@ class MyApp(ShowBase):
             self.start_third_scenario()
         if self.current_scenario == 3:
             self.start_fourth_scenario()
+        if self.current_scenario == 4:
+            self.start_fifth_scenario()
+        if self.current_scenario == 5:
+            self.start_sixth_scenario()
+        if self.current_scenario == 6:
+            self.start_seven_scenario()
+        if self.current_scenario == 7:
+            self.start_eight_scenario()
 
+
+        self._execute_next_step()
 
     def start_first_scenario(self):
-        """Подача воды от цистерны (лямбда-реализация)"""
+        """Подача воды от цистерны"""
         self.training_mode = True
         self.auto_mode = True
 
-        scenario_sequence = [
-            (lambda: self._execute_step("Выключите сцепление из насосного отсека",
-                                        lambda: self.rotate_valve1(1))),
-            (lambda: self._execute_step("Откройте задвижку «На лафетный ствол»",
-                                        lambda: self.rotate_valve5(1))),
-            (lambda: self._execute_step("Откройте задвижку «Из цистерны»",
-                                        lambda: self.rotate_valve4(1))),
-            (lambda: self._execute_step("Закройте задвижку «На лафетный ствол»",
-                                        lambda: self.rotate_valve5(-1))),
-            (lambda: self._execute_step("Включите сцепление(стрелка манометра поднимается до 3атм)",
-                                        lambda: self.rotate_valve1_with_camera(1))),
-            (lambda: self._execute_step("Откройте напорную задвижку",
-                                        lambda: self.rotate_valve2(1))),
-            (lambda: self._execute_step("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
-                                        lambda: self.rotate_valve11(1))),
-            (lambda: self._execute_step(
-                "",
-                lambda: self.end())),
-
+        self.scenario_sequence = [
+            ("Выключите сцепление из насосного отсека", lambda: self.rotate_valve1(1)),
+            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
+            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
+            ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
+            ("Включите сцепление (стрелка манометра до 3 атм)", lambda: self.rotate_valve1_with_camera(1)),
+            ("Откройте напорную задвижку", lambda: self.rotate_valve2(1)),
+            ("Поднимите давление до 6 атм", lambda: self.rotate_valve11(1)),
+            ("Сценарий завершен", self.end)
+            # (
+            #     " Откройте кран промывки пенодозатора (14).  ",
+            #     lambda: self.rotate_valve12(1)),
+            #
+            # ("Установите дозатор (6) в положение «3»",
+            #  lambda: self.rotate_valve44(1)),
+            #
+            # (
+            #     "Откройте задвижку «ПО из пенобака»",
+            #     lambda: self.rotate_valve111(1)),
+            #
+            #
+            # ("Установите дозатор (6) в поочередно в положение «1» «6» «1» «6»",
+            #  lambda: self.rotate_valve44(1)),
+            #
+            # (
+            #     " Закройте кран промывки пенодозатора (14).  ",
+            #     lambda: self.rotate_valve12(-1)),
+            # (
+            #     "Сценарий заверешн",
+            #     lambda: self.end()),
         ]
 
-        self._execute_sequence(scenario_sequence)
+        self.current_step_index = 0
 
     def end(self):
         self.step_label['text'] = ""
@@ -816,78 +967,277 @@ class MyApp(ShowBase):
         self.auto_mode = True
 
         scenario_sequence = [
-            (lambda: self._execute_step("Выключите сцепление из насосного отсека",
-                                        lambda: self.rotate_valve1(1))),
-            (lambda: self._execute_step("Откройте вакуумный кран",
-                                        lambda: self.rotate_valve8(1))),
-            (lambda: self._execute_step("Нажмите кнопку вакуумного насоса (13) — стрелка мановакууметра опустится до -0,6 атм.",
-                                        lambda: self.blink_valve13(1))),
-            # (lambda: self._execute_step("Отпустите кнопку",
-            #                             lambda: self.stop_blink_valve13(1))),
-            (lambda: self._execute_step("Отпустите кнопку и закройте вакуумный кран (4)»",
-                                        lambda: self.rotate_valve8(-1))),
-            (lambda: self._execute_step("Включите сцепление(стрелка манометра поднимается до 3атм)",
-                                        lambda: self.rotate_valve1_with_camera(1))),
-            (lambda: self._execute_step("Откройте напорную задвижку",
-                                        lambda: self.rotate_valve2(1))),
-            (lambda: self._execute_step("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
-                                        lambda: self.rotate_valve11(1))),
-            (lambda: self._execute_step(
-                "",
-                lambda: self.end())),
+            ("Выключите сцепление из насосного отсека",
+             lambda: self.rotate_valve1(1)),
+            ("Откройте вакуумный кран",
+             lambda: self.rotate_valve8(1)),
+            (
+                "Нажмите кнопку вакуумного насоса (13) — стрелка мановакууметра опустится до -0,6 атм.",
+                lambda: self.blink_valve13(1)),
+            ("Отпустите кнопку и закройте вакуумный кран (4)»",
+             lambda: self.rotate_valve8(-1)),
+            ("Включите сцепление(стрелка манометра поднимается до 3атм)",
+             lambda: self.rotate_valve1_with_camera(1)),
+            ("Откройте напорную задвижку",
+             lambda: self.rotate_valve2(1)),
+            (
+                "Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
+                lambda: self.rotate_valve11(1)),
+            (
+                "Сценарий завершен",
+                lambda: self.end()),
 
         ]
-
-        self._execute_sequence(scenario_sequence)
+        self.current_step_index = 0
+        #self._execute_sequence(scenario_sequence)
 
     def start_third_scenario(self):
         self.training_mode = True
         self.auto_mode = True
 
         scenario_sequence = [
-            (lambda: self._execute_step("Выключите сцепление из насосного отсека",
-                                        lambda: self.rotate_valve1(1))),
-            (lambda: self._execute_step("Откройте задвижку «В цистерну»",
-                                        lambda: self.rotate_valve13(1))),
-            (lambda: self._execute_step("Включите сцепление(стрелка манометра и мановаууметра поднимается до 3атм)",
-                                        lambda: self.rotate_valve66_with_camera(1,3))),
-            (lambda: self._execute_step(
+            ("Выключите сцепление из насосного отсека",
+                                        lambda: self.rotate_valve1(1)),
+            ("Откройте задвижку «В цистерну»",
+                                        lambda: self.rotate_valve13(1)),
+            ("Включите сцепление(стрелка манометра и мановаууметра поднимается до 3атм)",
+                                        lambda: self.rotate_valve66_with_camera(1, 3)),
+            (
                 "",
-                lambda: self.end())),
+                lambda: self.end()),
         ]
-
-        self._execute_sequence(scenario_sequence)
+        self.current_step_index = 0
+        #self._execute_sequence(scenario_sequence)
 
     def start_fourth_scenario(self):
         self.training_mode = True
         self.auto_mode = True
 
         scenario_sequence = [
-            (lambda: self._execute_step("Выключите сцепление из насосного отсека",
-                                        lambda: self.rotate_valve1(1))),
-            (lambda: self._execute_step("Откройте задвижку «На лафетный ствол»",
-                                        lambda: self.rotate_valve5(1))),
-            (lambda: self._execute_step("Откройте задвижку «Из цистерны»",
-                                        lambda: self.rotate_valve4(1))),
-            (lambda: self._execute_step("Включите сцепление(стрелка манометра поднимается до 3атм)",
-                                        lambda: self.rotate_valve1_with_camera(1))),
-            (lambda: self._execute_step("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
-                                        lambda: self.rotate_valve11(1))),
-            (lambda: self._execute_step(
+            ("Выключите сцепление из насосного отсека",
+                                        lambda: self.rotate_valve1(1)),
+            ("Откройте задвижку «На лафетный ствол»",
+                                        lambda: self.rotate_valve5(1)),
+            ("Откройте задвижку «Из цистерны»",
+                                        lambda: self.rotate_valve4(1)),
+            ("Включите сцепление(стрелка манометра поднимается до 3атм)",
+                                        lambda: self.rotate_valve1_with_camera(1)),
+            (
+                "Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
+                lambda: self.rotate_valve11(1)),
+            (
                 "",
-                lambda: self.end())),
+                lambda: self.end()),
+        ]
+        self.current_step_index = 0
+        #self._execute_sequence(scenario_sequence)
+
+    def start_fifth_scenario(self):
+        self.training_mode = True
+        self.auto_mode = True
+        print(1)
+
+        self.scenario_sequence = [
+            ("Выключите сцепление из насосного отсека",
+             lambda: self.rotate_valve1(1)),
+            ("Установите дозатор (6) в положение «3»",
+             lambda: self.rotate_valve44(1)),
+            # ("Откройте кран пеносмесителя (5).",
+            #                             lambda: self.rotate_valve44(1)),
+            ("Откройте задвижку «Из цистерны»",
+             lambda: self.rotate_valve4(1)),
+            ("Откройте задвижку «На лафетный ствол»",
+             lambda: self.rotate_valve5(1)),
+            (
+                "Откройте задвижку «ПО из пенобака»",
+                lambda: self.rotate_valve111(1)),
+            ("Включите сцепление(стрелка манометра поднимается до 3атм)",
+             lambda: self.rotate_valve1_with_camera(1)),
+            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
+             lambda: self.rotate_valve11(1)),
+            # (
+            #     " Уменьшите давление до 3 атм. кнопкой (15).    ",
+            #     lambda: self.rotate_valve12(-1)),
+            (
+                " Откройте кран промывки пенодозатора (14).  ",
+                lambda: self.rotate_valve12(1)),
+            ("Установите дозатор (6) в поочередно в положение «1» «6» «1» «6» 4 раза",
+             lambda: self.rotate_valve44(1)),
+            (
+                " Закройте кран промывки пенодозатора (14).  ",
+                lambda: self.rotate_valve12(-1)),
+            (
+                "Выключите сцепление (Стрелка манометра падает до 3 атм).  ",
+                lambda: self.end()),
+            (
+                "Сценарий завершен ",
+                lambda: self.end()),
+
         ]
 
-        self._execute_sequence(scenario_sequence)
+        self.current_step_index = 0
+
+
+    def start_sixth_scenario(self):
+        self.training_mode = True
+        self.auto_mode = True
+        print(1)
+
+        self.scenario_sequence = [
+            ("Выключите сцепление из насосного отсека",
+             lambda: self.rotate_valve1(1)),
+            ("Установите дозатор (6) в положение «1»",
+             lambda: self.rotate_valve44(1)),
+            # ("Откройте кран пеносмесителя (5).",
+            #                             lambda: self.rotate_valve44(1)),
+            ("Откройте задвижку «Из цистерны»",
+             lambda: self.rotate_valve4(1)),
+            # ("Откройте задвижку «На лафетный ствол»",
+            #  lambda: self.rotate_valve5(1)),
+            (
+                "Откройте задвижку «ПО из пенобака»",
+                lambda: self.rotate_valve111(1)),
+            ("Включите сцепление(стрелка манометра поднимается до 3атм)",
+             lambda: self.rotate_valve1_with_camera(1)),
+            ("Откройте напорную задвижку",
+             lambda: self.rotate_valve2(1)),
+
+            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 8 атм",
+             lambda: self.rotate_valve11(1)),
+            # (
+            #     " Уменьшите давление до 3 атм. кнопкой (15).    ",
+            #     lambda: self.rotate_valve12(-1)),
+            (
+                " Откройте кран промывки пенодозатора (14).  ",
+                lambda: self.rotate_valve12(1)),
+            ("Установите дозатор (6) в поочередно в положение «1» «6» «1» «6» 4 раза",
+             lambda: self.rotate_valve44(1)),
+            (
+                " Закройте кран промывки пенодозатора (14).  ",
+                lambda: self.rotate_valve12(-1)),
+            (
+                "Выключите сцепление (Стрелка манометра падает до 3 атм).  ",
+                lambda: self.end()),
+            (
+                "Сценарий завершен ",
+                lambda: self.end()),
+
+        ]
+
+        self.current_step_index = 0
+
+    def start_seven_scenario(self):
+        self.training_mode = True
+        self.auto_mode = True
+        print(1)
+
+        self.scenario_sequence = [
+            ("Выключите сцепление из насосного отсека",
+             lambda: self.rotate_valve1(1)),
+            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
+            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
+
+            ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
+            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
+            ("Включите сцепление(стрелка манометра поднимается до 3атм)",
+             lambda: self.rotate_valve1_with_camera(1)),
+            ("Откройте напорную задвижку",
+             lambda: self.rotate_valve2(1)),
+            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
+             lambda: self.rotate_valve11(1)),
+
+            (
+                "Сценарий завершен ",
+                lambda: self.end()),
+
+
+        ]
+
+        self.current_step_index = 0
+
+    def start_eight_scenario(self):
+        self.training_mode = True
+        self.auto_mode = True
+        print(1)
+
+        self.scenario_sequence = [
+            ("Выключите сцепление из насосного отсека",
+             lambda: self.rotate_valve1(1)),
+            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
+            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
+
+            ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
+            ("Включите сцепление(стрелка манометра поднимается до 3атм)",
+             lambda: self.rotate_valve1_with_camera(1)),
+            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
+             lambda: self.rotate_valve11(1)),
+            ("Откройте напорную задвижку",
+             lambda: self.rotate_valve2(1)),
+            ("Закройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
+            (
+                "Сценарий завершен ",
+                lambda: self.end()),
+
+
+        ]
+
+        self.current_step_index = 0
+
+    # self._execute_sequence(scenario_sequence)
+
+    # def _execute_step(self, message, action):
+    #     self.step_label['text'] = message
+    #     action()
 
     def _execute_step(self, message, action):
+        """Только показывает инструкцию, не выполняет действие"""
         self.step_label['text'] = message
-        action()
+        # Сохраняем действие для выполнения после нажатия кнопки
+        self.current_action = action
+        # Показываем кнопку сразу (без задержки)
+        self.next_step_btn.show()
+
+    def _execute_next_step(self):
+        """Выполняет текущий шаг только при нажатии кнопки"""
+        if not hasattr(self, 'scenario_sequence'):
+            return
+
+        if self.current_step_index < len(self.scenario_sequence):
+            # Получаем текст и действие для текущего шага
+            message, action = self.scenario_sequence[self.current_step_index]
+
+            # 1. Показываем текст шага
+            self.step_label['text'] = message
+
+            # 2. Выполняем действие
+            action()
+
+            # 3. Переходим к следующему шагу
+            self.current_step_index += 1
+
+            # Если это был последний шаг - завершаем сценарий
+            if self.current_step_index >= len(self.scenario_sequence):
+                self._end_scenario()
+        else:
+            self._end_scenario()
+
+    def _end_scenario(self):
+        """Завершение сценария"""
+        self.step_label['text'] = "Сценарий завершен!"
+        self.next_step_btn.hide()
+        self.training_mode = False
+        self.auto_mode = False
+
+        # Очищаем переменные сценария
+        if hasattr(self, 'scenario_sequence'):
+            del self.scenario_sequence
+        if hasattr(self, 'current_step_index'):
+            del self.current_step_index
 
     def _execute_sequence(self, sequence, index=0):
         """Рекурсивно выполняет последовательность шагов"""
         if index >= len(sequence):
-            #self.step_label['text'] = "Сценарий завершен!"
+            # self.step_label['text'] = "Сценарий завершен!"
             self.training_mode = False
             self.auto_mode = False
             return
@@ -962,7 +1312,6 @@ class MyApp(ShowBase):
         label_attr = 'preview_label_bottom' if is_bottom else 'preview_label_top'
         cam_np_attr = 'preview_cam_np_bottom' if is_bottom else 'preview_cam_np_top'
 
-
         # Удаляем предыдущую камеру того же типа
         if getattr(self, buffer_attr, None):
             getattr(self, buffer_attr).remove_all_display_regions()
@@ -988,15 +1337,12 @@ class MyApp(ShowBase):
             GraphicsPipe.BF_refuse_window,
             self.win.get_gsg(), self.win)
 
-
         setattr(self, buffer_attr, buffer)
 
         # Создаем и настраиваем текстуру
         texture = Texture()
         buffer.add_render_texture(texture, GraphicsOutput.RTMCopyRam)
         setattr(self, texture_attr, texture)
-
-
 
         # Настройка камеры
         lens = OrthographicLens()
@@ -1005,7 +1351,7 @@ class MyApp(ShowBase):
         cam_np = NodePath(preview_cam)
         cam_np.reparent_to(render)
 
-        #cam_np.set_scene(render)
+        # cam_np.set_scene(render)
         setattr(self, cam_np_attr, cam_np)
 
         # Позиционирование камеры
@@ -1019,7 +1365,6 @@ class MyApp(ShowBase):
             radius = bounds.get_radius() if not bounds.is_empty() else 1.0
             cam_np.set_pos(center + Vec3(0, -radius * 2, radius * 0.5))
             cam_np.look_at(center)
-
 
         # Создаем карточку для отображения
         cm = CardMaker(f"{'bottom_' if is_bottom else 'top_'}preview_card")
@@ -1065,7 +1410,6 @@ class MyApp(ShowBase):
                 getattr(self, attr).remove_node()
                 delattr(self, attr)
 
-
     def update_preview_camera_position(self, target_node):
         """Обновляет позицию превью-камеры"""
         if not self.preview_cam_np:
@@ -1078,11 +1422,9 @@ class MyApp(ShowBase):
         self.preview_cam_np.set_pos(center + Vec3(0, -self.preview_cam_distance * radius, radius * 0.3))
         self.preview_cam_np.look_at(center)
 
-
     def reset_plane14_color(self, task):
         self.plane14.clear_color_scale()
         return task.done
-
 
     def reset_plane3_color(self, task):
         self.plane3.clear_color_scale()
@@ -1198,6 +1540,62 @@ class MyApp(ShowBase):
 
         return task.cont
 
+    def move_valve12_task(self, task):
+        if not hasattr(self, 'valve12_pivot') or not self.valve12_moving:
+            return task.done
+
+        elapsed = globalClock.getFrameTime() - self.valve12_start_time
+        progress = min(elapsed / 5, 1.0)
+
+        angle_change = progress * self.valve12_target_angle_change
+        new_angle = self.valve12_start_angle + angle_change
+        self.valve12_pivot.set_p(new_angle)
+
+        if progress >= 1.0:
+            self.valve12_moving = False
+            self.valve12_current_angle = new_angle
+            # Важно: сохраняем новое состояние
+            if self.valve12_direction > 0:
+                self.valve12_is_open = True
+            else:
+                self.valve12_is_open = False
+
+            if self.training_mode:
+                self.on_step_completed()
+
+                self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+            return task.done
+
+        return task.cont
+
+    def move_valve111_task(self, task):
+        if not hasattr(self, 'valve111_pivot') or not self.valve111_moving:
+            return task.done
+
+        elapsed = globalClock.getFrameTime() - self.valve111_start_time
+        progress = min(elapsed / 5, 1.0)
+
+        angle_change = progress * self.valve111_target_angle_change
+        new_angle = self.valve111_start_angle + angle_change
+        self.valve111_pivot.set_r(new_angle)
+
+        if progress >= 1.0:
+            self.valve111_moving = False
+            self.valve111_current_angle = new_angle
+            # Важно: сохраняем новое состояние
+            if self.valve111_direction > 0:
+                self.valve111_is_open = True
+            else:
+                self.valve111_is_open = False
+
+            if self.training_mode:
+                self.on_step_completed()
+
+                self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+            return task.done
+
+        return task.cont
+
     def move_valve6_task(self, task):
         if not hasattr(self, 'valve6_pivot') or not hasattr(self, 'valve6'):
             return task.done  # Используем done вместо cont
@@ -1275,6 +1673,31 @@ class MyApp(ShowBase):
 
         return task.cont
 
+    def move_valve44_task(self, task):
+        if not hasattr(self, 'valve44_pivot') or not self.valve44_moving:
+            return task.done
+
+        elapsed = globalClock.getFrameTime() - self.valve44_start_time
+        progress = min(elapsed / 5, 1.0)
+
+        if self.valve44_direction > 0:
+            target_angle = self.valve44_target_angle
+        else:
+            target_angle = 0
+
+        new_angle = progress * target_angle
+        self.valve44_pivot.set_p(new_angle)
+
+        if progress >= 1.0:
+            self.valve44_moving = False
+            if self.training_mode:
+                self.on_step_completed()
+
+                self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+            return task.done
+
+        return task.cont
+
     def on_mouse_up(self):
         self.prev_mouse_pos = None
 
@@ -1335,7 +1758,7 @@ class MyApp(ShowBase):
         if 0 <= self.current_scenario < len(self.scenarios):
             scenario = self.scenarios[self.current_scenario]
             self.scenario_label['text'] = f"{scenario['name']}"
-           # self.step_label['text'] = "Нажмите Старт для начала"
+        # self.step_label['text'] = "Нажмите Старт для начала"
 
     def next_scenario(self):
         if self.current_scenario < len(self.scenarios) - 1:
@@ -1422,7 +1845,7 @@ class MyApp(ShowBase):
             taskMgr.remove(self._current_task)
             self._current_task = None
 
-      #  self.step_label['text'] = "Сценарий завершен!"
+    #  self.step_label['text'] = "Сценарий завершен!"
 
     def next_scenario_step(self, task):
         """Переходит к следующему шагу сценария"""
@@ -1465,7 +1888,6 @@ class MyApp(ShowBase):
             self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
             self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
 
-
     def rotate_valve1_with_camera(self, direction):
         print(f"Вращаем вентиль 1, направление: {direction}")
         if hasattr(self, 'plane14'):
@@ -1492,8 +1914,7 @@ class MyApp(ShowBase):
 
             self.taskMgr.do_method_later(5.0, self.next_scenario_step, "DelayedNextStep")
 
-
-    def rotate_valve66_with_camera(self, direction, kPa = 3):
+    def rotate_valve66_with_camera(self, direction, kPa=3):
         print(f"Вращаем вентиль 1, направление: {direction}")
         if hasattr(self, 'plane14'):
             self.plane14.set_color_scale(1, 0, 0, 1)
@@ -1520,7 +1941,6 @@ class MyApp(ShowBase):
             self.taskMgr.add(self.move_valve66_task, "MoveValve66Task")
 
             self.taskMgr.do_method_later(5.0, self.next_scenario_step, "DelayedNextStep")
-
 
     def rotate_valve1(self, direction):
         self.toggle_background_music()
@@ -1558,24 +1978,20 @@ class MyApp(ShowBase):
                 self.valve66_moving = True
                 self.valve66_start_time = globalClock.getFrameTime()
 
-                #Добавляем знак минус для инверсии направления (если нужно)
-
+                # Добавляем знак минус для инверсии направления (если нужно)
 
             base.graphicsEngine.renderFrame()
             self.create_preview_camera(self.plane3.name)
             self.create_preview_camera("Manovakuummetr_Arrow", is_bottom=True)
-
-
 
             def update_camera(task):
                 base.graphicsEngine.renderFrame()
                 return task.done
 
             self.taskMgr.add(update_camera, 'force_render')
-            #self.sound_one.play()
+            # self.sound_one.play()
             self.play_sound("media/s1/audio2.mp3")
             self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
-
 
     def stop_blink_valve13(self, direction):
 
@@ -1589,7 +2005,6 @@ class MyApp(ShowBase):
             self.taskMgr.add(update_camera, 'force_render')
 
             self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
-
 
     def rotate_valve2(self, direction):
         """Вращение вентиля 2"""
@@ -1641,6 +2056,31 @@ class MyApp(ShowBase):
             self.create_preview_camera(self.valve5.name)
             self.taskMgr.add(self.move_valve5_task, "MoveValve5Task")
 
+    def rotate_valve111(self, direction):
+        """Вращение вентиля 5 (рычаг)"""
+        print(f"Вращаем рычаг (вентиль111), направление: {direction}")
+        if hasattr(self, 'valve111_pivot'):
+            # Если клапан уже в нужном положении - пропускаем анимацию
+            if (direction > 0 and hasattr(self, 'valve111_is_open') and self.valve111_is_open) or \
+                    (direction < 0 and hasattr(self, 'valve111_is_open') and not self.valve111_is_open):
+                self.on_step_completed()
+                return
+            self.stop_blink_valve13(1)
+            if not hasattr(self, 'valve111_current_angle'):
+                self.valve111_current_angle = self.valve111_pivot.get_p()
+
+            self.valve111_direction = direction
+            self.valve111_moving = True
+            self.valve111_start_time = globalClock.getFrameTime()
+            self.valve111_start_angle = self.valve111_current_angle
+
+            if direction > 0:
+                self.valve111_target_angle_change = 180
+            else:
+                self.valve111_target_angle_change = -85
+
+            self.create_preview_camera(self.valve111.name)
+            self.taskMgr.add(self.move_valve111_task, "MoveValve111Task")
 
     def rotate_valve8(self, direction):
         """Вращение вентиля 5 (рычаг)"""
@@ -1667,6 +2107,32 @@ class MyApp(ShowBase):
 
             self.create_preview_camera(self.valve8.name)
             self.taskMgr.add(self.move_valve8_task, "MoveValve5Task")
+
+    def rotate_valve12(self, direction):
+        """Вращение вентиля 5 (рычаг)"""
+        print(f"Вращаем рычаг (вентиль8), направление: {direction}")
+        if hasattr(self, 'valve12_pivot'):
+            # Если клапан уже в нужном положении - пропускаем анимацию
+            if (direction > 0 and hasattr(self, 'valve12_is_open') and self.valve12_is_open) or \
+                    (direction < 0 and hasattr(self, 'valve12_is_open') and not self.valve12_is_open):
+                self.on_step_completed()
+                return
+            self.stop_blink_valve13(1)
+            if not hasattr(self, 'valve12_current_angle'):
+                self.valve12_current_angle = self.valve12_pivot.get_p()
+
+            self.valve12_direction = direction
+            self.valve12_moving = True
+            self.valve12_start_time = globalClock.getFrameTime()
+            self.valve12_start_angle = self.valve12_current_angle
+
+            if direction > 0:
+                self.valve12_target_angle_change = 85
+            else:
+                self.valve12_target_angle_change = -85
+
+            self.create_preview_camera(self.valve12.name)
+            self.taskMgr.add(self.move_valve12_task, "MoveValve12Task")
 
     def rotate_valve6(self, direction):
         """Вращение стрелки манометра (вентиль 6)"""
@@ -1697,6 +2163,18 @@ class MyApp(ShowBase):
 
             self.taskMgr.add(self.move_valve13_task, "MoveValve13Task")
 
+    def rotate_valve44(self, direction):
+        """Вращение вентиля 2"""
+        print(f"Вращаем вентиль 13, направление: {direction}")
+        if hasattr(self, 'valve44_pivot'):
+            self.valve44_direction = direction
+            self.valve44_moving = True
+            self.valve44_start_time = globalClock.getFrameTime()
+
+            self.play_sound("media/s3/audio1.mp3")
+            self.create_preview_camera(self.valve44.name)
+
+            self.taskMgr.add(self.move_valve44_task, "MoveValve44Task")
 
     def on_step_completed(self):
         """Обрабатывает завершение шага сценария"""
@@ -1709,7 +2187,7 @@ class MyApp(ShowBase):
         if scenario.get('type') == 'method':
             self.training_mode = False
             self.auto_mode = False
-            #self.step_label['text'] = "Сценарий завершен!"
+            # self.step_label['text'] = "Сценарий завершен!"
             return
 
         # Для пошаговых сценариев
@@ -1718,10 +2196,9 @@ class MyApp(ShowBase):
             if self.current_step >= len(scenario['steps']):
                 self.training_mode = False
                 self.auto_mode = False
-               # self.step_label['text'] = "Сценарий завершен!"
+            # self.step_label['text'] = "Сценарий завершен!"
             else:
                 self.execute_current_step()
-
 
     def start_valve_spin(self, valve_num):
         if valve_num == 6 and not self.valve6_moving:
@@ -1744,8 +2221,6 @@ class MyApp(ShowBase):
                 self.on_step_completed()
             else:
                 self.step_label['text'] = "Неверное действие! " + scenario['steps'][self.current_step]['message']
-
-
 
     def execute_sequence(self, sequence, callback=None):
         """Запускает выполнение последовательности действий"""
@@ -1772,6 +2247,7 @@ class MyApp(ShowBase):
             self._execute_sequence_step,
             "SequenceStep"
         )
+
 
 app = MyApp()
 app.run()
