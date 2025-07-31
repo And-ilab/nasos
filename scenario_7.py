@@ -42,11 +42,11 @@ class MyApp(ShowBase):
         self._current_task = None
 
         self.scenarios = [
-            {
-                'name': "Подача воды от цистерны",
-                'type': 'method',
-                'method': 'first_scenario'
-            },
+            # {
+            #     'name': "Подача воды от цистерны",
+            #     'type': 'method',
+            #     'method': 'first_scenario'
+            # },
             # {
             #     'name': "Забор воды от открытого водоисточника",
             #     'type': 'method',
@@ -70,13 +70,13 @@ class MyApp(ShowBase):
             # {
             #     'name': "Подача пены на 1 ГПС-600",
             #     'type': 'method',
-            #     'method': 'sifth_scenario'
+            #     'method': 'sixth_scenario'
             # },
-            # {
-            #     'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (1 способ)",
-            #     'type': 'method',
-            #     'method': 'seven_scenario'
-            # },
+            {
+                'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (1 способ)",
+                'type': 'method',
+                'method': 'seven_scenario'
+            },
             # {
             #     'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (2 способ)",
             #     'type': 'method',
@@ -925,7 +925,7 @@ class MyApp(ShowBase):
         self.next_step_btn.show()
 
         """Запускает выбранный сценарий через лямбда-функции"""
-        if self.current_scenario == 0:
+        if self.current_scenario == 1:
             self.start_first_scenario()
         if self.current_scenario == 1:
             self.start_second_scenario()
@@ -937,7 +937,7 @@ class MyApp(ShowBase):
             self.start_fifth_scenario()
         if self.current_scenario == 5:
             self.start_sixth_scenario()
-        if self.current_scenario == 6:
+        if self.current_scenario == 0:
             self.start_seven_scenario()
         if self.current_scenario == 7:
             self.start_eight_scenario()

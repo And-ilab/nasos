@@ -115,7 +115,7 @@ class MyApp(ShowBase):
                 "pos": Point3(0.281166 - 0.2, -1.5 - 0.6, 0.568012 - 0.2),
                 "look": Point3(0.281166 - 0.5, 0.26543 - 0.1, 0.468012 - 0.2)
             },
-            "Пеносмеситель": {
+            "Дозатор": {
                 "pos": Point3(0.281166 - 1.0, -1.5 - 0.3, 0.568012 - 0.2),
                 "look": Point3(0.281166 - 0.8, 0.26543 - 0.1, 0.468012 - 0.2)
             },
@@ -231,6 +231,14 @@ class MyApp(ShowBase):
             print("✅ кнопка найдена")
             self.plane3 = plane3
             self.plane3.name = "Пульт"
+
+        plane10 = self.model.find("**/plane10")
+        if plane10.is_empty():
+            print("❌ кнопка не найдена!")
+        else:
+            print("✅ кнопка найдена")
+            self.plane10 = plane10
+            self.plane10.name = "Пульт"
 
         valve2_geom = self.model.find("**/COMPOUND1")
         point5 = self.model.find("**/point5")
@@ -402,7 +410,7 @@ class MyApp(ShowBase):
             self.valve44_target_angle = 90
             self.valve44_moving = False
             self.valve44_direction = 1
-            self.valve44.name = "Пеносмеситель"
+            self.valve44.name = "Дозатор"
 
         valve8_geom = self.model.find("**/ COMPOUND8")
         point8 = self.model.find("**/point9.001")
@@ -750,9 +758,28 @@ class MyApp(ShowBase):
 
         return task.cont  # продолжаем мигание
 
+    def start_blink10(self, task):
+        """Мигание plane11 (красный ↔ белый)"""
+        t = globalClock.get_frame_time()
+        blink = int(t * 2) % 2
+        print("+")
+
+        if blink:
+            self.plane10.set_color_scale(1, 0, 0, 1)  # красный
+        else:
+            self.plane10.set_color_scale(1, 1, 1, 1)  # белый
+
+        # Проверяем, прошло ли 4 секунды
+        if task.time > 4.0:
+            self.plane10.set_color_scale(1, 1, 1, 1)  # гарантированно белый
+            return task.done  # останавливаем задачу
+
+        return task.cont  # продолжаем мигание
+
     def stop_blink(self, task):
         """Запуск фоновой музыки"""
         self.plane11.set_color_scale(1, 1, 1, 1)  # белый / оригинал
+        self.plane10.set_color_scale(1, 1, 1, 1)  # белый / оригинал
         return task.done
         # return task.cont
 
@@ -923,6 +950,7 @@ class MyApp(ShowBase):
         self.training_mode = True
         self.auto_mode = True
 
+
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека", lambda: self.rotate_valve1(1)),
             ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
@@ -932,29 +960,7 @@ class MyApp(ShowBase):
             ("Откройте напорную задвижку", lambda: self.rotate_valve2(1)),
             ("Поднимите давление до 6 атм", lambda: self.rotate_valve11(1)),
             ("Сценарий завершен", self.end)
-            # (
-            #     " Откройте кран промывки пенодозатора (14).  ",
-            #     lambda: self.rotate_valve12(1)),
-            #
-            # ("Установите дозатор (6) в положение «3»",
-            #  lambda: self.rotate_valve44(1)),
-            #
-            # (
-            #     "Откройте задвижку «ПО из пенобака»",
-            #     lambda: self.rotate_valve111(1)),
-            #
-            #
-            # ("Установите дозатор (6) в поочередно в положение «1» «6» «1» «6»",
-            #  lambda: self.rotate_valve44(1)),
-            #
-            # (
-            #     " Закройте кран промывки пенодозатора (14).  ",
-            #     lambda: self.rotate_valve12(-1)),
-            # (
-            #     "Сценарий заверешн",
-            #     lambda: self.end()),
         ]
-
         self.current_step_index = 0
 
     def end(self):
@@ -966,7 +972,7 @@ class MyApp(ShowBase):
         self.training_mode = True
         self.auto_mode = True
 
-        scenario_sequence = [
+        self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
             ("Откройте вакуумный кран",
@@ -994,13 +1000,17 @@ class MyApp(ShowBase):
     def start_third_scenario(self):
         self.training_mode = True
         self.auto_mode = True
+        print('исправить 1010 строка еще и монометр')
+        self.scenario_sequence = [
 
-        scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
                                         lambda: self.rotate_valve1(1)),
             ("Откройте задвижку «В цистерну»",
                                         lambda: self.rotate_valve13(1)),
-            ("Включите сцепление(стрелка манометра и мановаууметра поднимается до 3атм)",
+
+
+
+            ("Включите сцепление(стрелка мановаууметра поднимается до 3атм)",
                                         lambda: self.rotate_valve66_with_camera(1, 3)),
             (
                 "",
@@ -1013,7 +1023,7 @@ class MyApp(ShowBase):
         self.training_mode = True
         self.auto_mode = True
 
-        scenario_sequence = [
+        self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
                                         lambda: self.rotate_valve1(1)),
             ("Откройте задвижку «На лафетный ствол»",
@@ -1040,10 +1050,10 @@ class MyApp(ShowBase):
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
-            ("Установите дозатор (6) в положение «3»",
+            ("Установите дозатор (6) в положение «1»",
              lambda: self.rotate_valve44(1)),
             # ("Откройте кран пеносмесителя (5).",
-            #                             lambda: self.rotate_valve44(1)),
+            # #                             lambda: self.rotate_valve44(1)),
             ("Откройте задвижку «Из цистерны»",
              lambda: self.rotate_valve4(1)),
             ("Откройте задвижку «На лафетный ствол»",
@@ -1055,14 +1065,14 @@ class MyApp(ShowBase):
              lambda: self.rotate_valve1_with_camera(1)),
             ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
              lambda: self.rotate_valve11(1)),
-            # (
-            #     " Уменьшите давление до 3 атм. кнопкой (15).    ",
-            #     lambda: self.rotate_valve12(-1)),
+            (" Уменьшите давление до 3 атм. кнопкой (15).    ",
+                lambda: self.blink_plane10_camera(-1, end=1)),
+
             (
                 " Откройте кран промывки пенодозатора (14).  ",
                 lambda: self.rotate_valve12(1)),
             ("Установите дозатор (6) в поочередно в положение «1» «6» «1» «6» 4 раза",
-             lambda: self.rotate_valve44(1)),
+             lambda: self.rotate_valve44(1, 10)),
             (
                 " Закройте кран промывки пенодозатора (14).  ",
                 lambda: self.rotate_valve12(-1)),
@@ -1081,13 +1091,11 @@ class MyApp(ShowBase):
     def start_sixth_scenario(self):
         self.training_mode = True
         self.auto_mode = True
-        print(1)
-
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
             ("Установите дозатор (6) в положение «1»",
-             lambda: self.rotate_valve44(1)),
+             lambda: self.rotate_valve44(1,1)),
             # ("Откройте кран пеносмесителя (5).",
             #                             lambda: self.rotate_valve44(1)),
             ("Откройте задвижку «Из цистерны»",
@@ -1103,27 +1111,27 @@ class MyApp(ShowBase):
              lambda: self.rotate_valve2(1)),
 
             ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 8 атм",
-             lambda: self.rotate_valve11(1)),
-            # (
-            #     " Уменьшите давление до 3 атм. кнопкой (15).    ",
-            #     lambda: self.rotate_valve12(-1)),
+             lambda: self.rotate_valve11(1, eight=True)),
+            (" Уменьшите давление до 3 атм. кнопкой (15).    ",
+                lambda: self.blink_plane10_camera(-1, end=1)),
+
             (
                 " Откройте кран промывки пенодозатора (14).  ",
                 lambda: self.rotate_valve12(1)),
             ("Установите дозатор (6) в поочередно в положение «1» «6» «1» «6» 4 раза",
-             lambda: self.rotate_valve44(1)),
+             lambda: self.rotate_valve44(1,10)),
+
             (
                 " Закройте кран промывки пенодозатора (14).  ",
                 lambda: self.rotate_valve12(-1)),
             (
-                "Выключите сцепление (Стрелка манометра падает до 3 атм).  ",
-                lambda: self.end()),
+                "Включите сцепление(стрелка манометра поднимается до 3атм)",
+                 lambda: self.rotate_valve1_with_camera(1)),
             (
                 "Сценарий завершен ",
                 lambda: self.end()),
 
         ]
-
         self.current_step_index = 0
 
     def start_seven_scenario(self):
@@ -1426,6 +1434,10 @@ class MyApp(ShowBase):
         self.plane14.clear_color_scale()
         return task.done
 
+    def reset_plane10_color(self, task):
+        self.plane10.clear_color_scale()
+        return task.done
+
     def reset_plane3_color(self, task):
         self.plane3.clear_color_scale()
         return task.done
@@ -1597,28 +1609,25 @@ class MyApp(ShowBase):
         return task.cont
 
     def move_valve6_task(self, task):
-        if not hasattr(self, 'valve6_pivot') or not hasattr(self, 'valve6'):
-            return task.done  # Используем done вместо cont
+        if not hasattr(self, 'valve6_pivot') or not self.valve6_moving:
+            return task.done
 
-        if self.valve6_moving:
-            elapsed = globalClock.getFrameTime() - self.valve6_start_time
-            progress = min(elapsed / 2.0, 1.0)  # Уменьшил время до 1 секунды
+        elapsed = globalClock.getFrameTime() - self.valve6_start_time
+        progress = min(elapsed / 2.0, 1.0)  # 2 секунды на анимацию
 
-            # Плавная интерполяция угла
-            start_angle = self.valve6_start_angle  # Новый атрибут для сохранения начального угла
-            target_angle = self.valve6_target_angle
-            new_angle = start_angle + (target_angle) * progress
+        # Плавная интерполяция между начальным и целевым углом
+        new_angle = self.valve6_start_angle + progress * (self.valve6_target_angle - self.valve6_start_angle)
 
-            # Вращение вокруг оси Z (горизонтальное)
-            self.valve6_pivot.set_p(-new_angle)  # Отрицательное значение для правильного направления
+        # Устанавливаем новый угол с учетом направления вращения
+        self.valve6_pivot.set_p(-new_angle)  # Отрицательное значение для правильного направления
 
-            if progress >= 1.0:
-                self.valve6_moving = False
-                self.valve6_angle = target_angle  # Сохраняем конечный угол
-                if self.training_mode:
-                    self.on_step_completed()
-                    self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
-                return task.done
+        if progress >= 1.0:
+            self.valve6_moving = False
+            self.valve6_angle = self.valve6_target_angle  # Сохраняем конечный угол
+            if self.training_mode:
+                self.on_step_completed()
+                self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+            return task.done
 
         return task.cont
 
@@ -1673,26 +1682,96 @@ class MyApp(ShowBase):
 
         return task.cont
 
+    # def move_valve44_task(self, task):
+    #     if not hasattr(self, 'valve44_pivot') or not self.valve44_moving:
+    #         return task.done
+    #
+    #     elapsed = globalClock.getFrameTime() - self.valve44_start_time
+    #     progress = min(elapsed / 5, 1.0)
+    #
+    #     if self.valve44_direction > 0:
+    #         target_angle = self.valve44_target_angle
+    #     else:
+    #         target_angle = 0
+    #
+    #     new_angle = progress * target_angle
+    #     self.valve44_pivot.set_p(new_angle)
+    #
+    #     if progress >= 1.0:
+    #         self.valve44_moving = False
+    #         if self.training_mode:
+    #             self.on_step_completed()
+    #
+    #             self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+    #         return task.done
+    #
+    #     return task.cont
+
+    # def move_valve44_task(self, task):
+    #     if not hasattr(self, 'valve44_pivot') or not self.valve44_moving:
+    #         return task.done
+    #
+    #     elapsed = globalClock.getFrameTime() - self.valve44_start_time
+    #     progress = min(elapsed / 5, 1.0)  # 5 секунд на полный поворот
+    #
+    #     # Плавное изменение угла
+    #     new_angle = progress * self.valve44_target_angle
+    #     self.valve44_pivot.set_p(new_angle)
+    #
+    #     if progress >= 1.0:
+    #         self.valve44_moving = False
+    #         if self.training_mode:
+    #             self.on_step_completed()
+    #             self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+    #         return task.done
+    #
+    #     return task.cont
+
     def move_valve44_task(self, task):
         if not hasattr(self, 'valve44_pivot') or not self.valve44_moving:
             return task.done
 
+        # Режим последовательности (position=10)
+        if hasattr(self, 'valve44_sequence'):
+            current_seq = self.valve44_sequence[self.valve44_sequence_index]
+            elapsed = globalClock.getFrameTime() - self.valve44_start_time
+            progress = min(elapsed / current_seq["time"], 1.0)
+
+            # Вычисляем текущий целевой угол
+            target_angle = self.calculate_angle_for_position(current_seq["target"])
+            start_angle = self.calculate_angle_for_position(1 if current_seq["target"] == 6 else 6)
+            new_angle = start_angle + progress * (target_angle - start_angle)
+
+            self.valve44_pivot.set_p(new_angle)
+
+            if progress >= 1.0:
+                self.valve44_sequence_index += 1
+                if self.valve44_sequence_index >= len(self.valve44_sequence):
+                    # Завершили всю последовательность
+                    self.valve44_moving = False
+                    del self.valve44_sequence
+                    del self.valve44_sequence_index
+                    if self.training_mode:
+                        self.on_step_completed()
+                        self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
+                    return task.done
+                else:
+                    # Переходим к следующему этапу последовательности
+                    self.valve44_start_time = globalClock.getFrameTime()
+                    return task.cont
+            return task.cont
+
+        # Обычный режим вращения
         elapsed = globalClock.getFrameTime() - self.valve44_start_time
-        progress = min(elapsed / 5, 1.0)
+        progress = min(elapsed / 5, 1.0)  # 5 секунд на поворот
 
-        if self.valve44_direction > 0:
-            target_angle = self.valve44_target_angle
-        else:
-            target_angle = 0
-
-        new_angle = progress * target_angle
+        new_angle = progress * self.valve44_target_angle
         self.valve44_pivot.set_p(new_angle)
 
         if progress >= 1.0:
             self.valve44_moving = False
             if self.training_mode:
                 self.on_step_completed()
-
                 self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
             return task.done
 
@@ -1864,7 +1943,19 @@ class MyApp(ShowBase):
 
         return task.cont
 
-    def rotate_valve11(self, direction):
+
+    def blink_task10(self, task):
+        t = globalClock.get_frame_time()
+        blink = int(t * 2) % 2  # мигает 2 раза в секунду
+
+        if blink:
+            self.plane10.set_color_scale(1, 0, 0, 1)  # красный
+        else:
+            self.plane10.set_color_scale(1, 1, 1, 1)  # белый / оригинал
+
+        return task.cont
+
+    def rotate_valve11(self, direction, eight = None):
         print("first stage")
         if hasattr(self, 'plane11'):
             print("second stage")
@@ -1872,8 +1963,12 @@ class MyApp(ShowBase):
             if hasattr(self, 'valve6_pivot'):
                 if not hasattr(self, 'valve6_angle'):
                     self.valve6_angle = self.valve6_pivot.get_h()  # Текущий угол
-
+                if eight is not None:
+                    angle_plus = 55
+                else:
+                    angle_plus = 30
                 angle_change = 30 * direction  # Угол поворота (направление: 1 или -1)
+                angle_change = angle_plus + angle_change
                 self.valve6_target_angle = (self.valve6_angle + angle_change) % 360
                 self.valve6_start_angle = self.valve6_angle
                 self.valve6_moving = True  # Разрешаем движение
@@ -1888,7 +1983,7 @@ class MyApp(ShowBase):
             self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
             self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
 
-    def rotate_valve1_with_camera(self, direction):
+    def rotate_valve1_with_camera(self, direction,end = None):
         print(f"Вращаем вентиль 1, направление: {direction}")
         if hasattr(self, 'plane14'):
             self.plane14.set_color_scale(1, 0, 0, 1)
@@ -1899,7 +1994,53 @@ class MyApp(ShowBase):
                     self.valve6_angle = self.valve6_pivot.get_h()  # Текущий угол
 
                 angle_change = 19 * direction
+
                 self.valve6_target_angle = (self.valve6_angle + angle_change) % 360
+                print(  self.valve6_target_angle)
+                if end is not None:
+                    # Если есть параметр end - вращаем назад (против часовой)
+                    angle_change = -19  # Фиксированное значение для обратного вращения
+                    self.valve6_target_angle = 0  # Или другой целевой угол для обратного вращения
+                else:
+                    # Обычное вращение
+                    angle_change = 19 * direction
+                    self.valve6_target_angle = (self.valve6_angle + angle_change) % 360
+
+                self.valve6_start_angle = self.valve6_angle
+                self.valve6_moving = True
+                self.valve6_start_time = globalClock.getFrameTime()  # Время начала
+
+            # Создаем обе камеры
+            self.start_background_music()
+            self.create_preview_camera(self.plane14.name, is_bottom=False)
+            self.create_preview_camera("Manometr_Arrow", is_bottom=True)
+
+            self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
+
+            self.taskMgr.do_method_later(5.0, self.next_scenario_step, "DelayedNextStep")
+
+    def blink_plane10_camera(self, direction, end=None):
+        print(f"Вращаем вентиль 1, направление: {direction}")
+        if hasattr(self, 'plane10'):
+            self.taskMgr.add(self.start_blink10, "BlinkTask")
+
+            if hasattr(self, 'valve6_pivot'):
+                if not hasattr(self, 'valve6_angle'):
+                    self.valve6_angle = self.valve6_pivot.get_h()  # Текущий угол
+
+                angle_change = 19 * direction
+
+                self.valve6_target_angle = (self.valve6_angle + angle_change) % 360
+                print(  self.valve6_target_angle)
+                if end is not None:
+                    # Если есть параметр end - вращаем назад (против часовой)
+                    angle_change = -19  # Фиксированное значение для обратного вращения
+                    self.valve6_target_angle = 19  # Или другой целевой угол для обратного вращения
+                else:
+                    # Обычное вращение
+                    angle_change = 19 * direction
+                    self.valve6_target_angle = (self.valve6_angle + angle_change) % 360
+
                 self.valve6_start_angle = self.valve6_angle
                 self.valve6_moving = True
                 self.valve6_start_time = globalClock.getFrameTime()  # Время начала
@@ -1913,6 +2054,7 @@ class MyApp(ShowBase):
             self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
 
             self.taskMgr.do_method_later(5.0, self.next_scenario_step, "DelayedNextStep")
+
 
     def rotate_valve66_with_camera(self, direction, kPa=3):
         print(f"Вращаем вентиль 1, направление: {direction}")
@@ -1971,7 +2113,8 @@ class MyApp(ShowBase):
                     self.valve66_angle = self.valve66_pivot.get_p()  # Используем get_p() вместо get_h()
 
                 angle_change = 10 * direction
-                self.valve66_pivot.set_p(-self.valve66_target_angle)
+                # self.valve66_pivot.set_p(self.valve66_target_angle)
+                self.valve66_pivot.set_p(41.3)
                 # Для оси X: положительный угол = наклон вниз
                 self.valve66_target_angle = (self.valve66_angle + angle_change) % 360
                 self.valve66_start_angle = self.valve66_angle
@@ -2079,6 +2222,8 @@ class MyApp(ShowBase):
             else:
                 self.valve111_target_angle_change = -85
 
+            self.play_sound("media/s1/audio2.mp3")
+
             self.create_preview_camera(self.valve111.name)
             self.taskMgr.add(self.move_valve111_task, "MoveValve111Task")
 
@@ -2162,19 +2307,77 @@ class MyApp(ShowBase):
             self.create_preview_camera(self.valve13.name)
 
             self.taskMgr.add(self.move_valve13_task, "MoveValve13Task")
+    #
+    # def rotate_valve44(self, direction):
+    #     """Вращение вентиля 2"""
+    #     print(f"Вращаем вентиль 13, направление: {direction}")
+    #     if hasattr(self, 'valve44_pivot'):
+    #         self.valve44_direction = direction
+    #         self.valve44_moving = True
+    #         self.valve44_start_time = globalClock.getFrameTime()
+    #
+    #         self.play_sound("media/s3/audio1.mp3")
+    #         self.create_preview_camera(self.valve44.name)
+    #
+    #         self.taskMgr.add(self.move_valve44_task, "MoveValve44Task")
 
-    def rotate_valve44(self, direction):
-        """Вращение вентиля 2"""
-        print(f"Вращаем вентиль 13, направление: {direction}")
+    # def rotate_valve44(self, direction, position=None):
+    #     """Вращение вентиля 2 с возможностью установки конкретного положения"""
+    #     print(f"Вращаем вентиль 13, направление: {direction}, положение: {position}")
+    #
+    #     if hasattr(self, 'valve44_pivot'):
+    #         self.valve44_direction = direction
+    #         self.valve44_moving = True
+    #         self.valve44_start_time = globalClock.getFrameTime()
+    #         if direction == 1:
+    #             d = -1
+    #         else:
+    #             d = 1
+    #         # Определяем целевой угол в зависимости от положения
+    #         if position is not None:
+    #             # 6 положений, каждое по 60 градусов (0-5)
+    #             self.valve44_target_angle = d * (position - 1) * 20  # position 1=0°, 2=60°...6=300°
+    #         else:
+    #             # Если положение не указано, используем полный поворот (по умолчанию)
+    #             self.valve44_target_angle = 360 if direction > 0 else 0
+    #
+    #         self.play_sound("media/s3/audio1.mp3")
+    #         self.create_preview_camera(self.valve44.name)
+    #         self.taskMgr.add(self.move_valve44_task, "MoveValve44Task")
+
+    def rotate_valve44(self, direction, position=None):
+        """Вращение вентиля с возможностью сложной последовательности"""
+        print(f"Вращаем вентиль 13, направление: {direction}, положение: {position}")
+
         if hasattr(self, 'valve44_pivot'):
             self.valve44_direction = direction
             self.valve44_moving = True
             self.valve44_start_time = globalClock.getFrameTime()
 
+            # Специальный режим для 4 оборотов
+            if position == 10:
+                self.valve44_sequence = [
+                    {"target": 6, "time": 1.5},  # 1.5 сек до положения 6
+                    {"target": 1, "time": 1.5},  # 1.5 сек до положения 1
+                    {"target": 6, "time": 1.5},  # повтор
+                    {"target": 1, "time": 1.5}  # повтор
+                ]
+                self.valve44_sequence_index = 0
+                self.valve44_target_angle = self.calculate_angle_for_position(6)
+            elif position is not None:
+                # Обычный режим с одним положением
+                self.valve44_target_angle = self.calculate_angle_for_position(position)
+            else:
+                # Непрерывное вращение
+                self.valve44_target_angle = 360 if direction > 0 else 0
+
             self.play_sound("media/s3/audio1.mp3")
             self.create_preview_camera(self.valve44.name)
-
             self.taskMgr.add(self.move_valve44_task, "MoveValve44Task")
+
+    def calculate_angle_for_position(self, position):
+        """Вычисляет угол для заданного положения (1-6)"""
+        return - (position - 1) * 60  # 0° для положения 1, -300° для положения 6
 
     def on_step_completed(self):
         """Обрабатывает завершение шага сценария"""

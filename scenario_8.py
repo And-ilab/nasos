@@ -42,11 +42,11 @@ class MyApp(ShowBase):
         self._current_task = None
 
         self.scenarios = [
-            {
-                'name': "Подача воды от цистерны",
-                'type': 'method',
-                'method': 'first_scenario'
-            },
+            # {
+            #     'name': "Подача воды от цистерны",
+            #     'type': 'method',
+            #     'method': 'first_scenario'
+            # },
             # {
             #     'name': "Забор воды от открытого водоисточника",
             #     'type': 'method',
@@ -77,11 +77,11 @@ class MyApp(ShowBase):
             #     'type': 'method',
             #     'method': 'seven_scenario'
             # },
-            # {
-            #     'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (2 способ)",
-            #     'type': 'method',
-            #     'method': 'eight_scenario'
-            # },
+            {
+                'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (2 способ)",
+                'type': 'method',
+                'method': 'eight_scenario'
+            },
         ]
 
         offset = Vec3(1.1, 6, -0.3)
@@ -925,7 +925,7 @@ class MyApp(ShowBase):
         self.next_step_btn.show()
 
         """Запускает выбранный сценарий через лямбда-функции"""
-        if self.current_scenario == 0:
+        if self.current_scenario == 1:
             self.start_first_scenario()
         if self.current_scenario == 1:
             self.start_second_scenario()
@@ -939,7 +939,7 @@ class MyApp(ShowBase):
             self.start_sixth_scenario()
         if self.current_scenario == 6:
             self.start_seven_scenario()
-        if self.current_scenario == 7:
+        if self.current_scenario == 0:
             self.start_eight_scenario()
 
 
