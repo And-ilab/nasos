@@ -1,3 +1,7 @@
+import argparse
+import json
+
+import requests
 from direct.gui import DirectGui
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import DirectionalLight, AmbientLight, Vec4, TextNode, FrameBufferProperties, WindowProperties, \
@@ -20,6 +24,30 @@ from direct.gui.OnscreenText import OnscreenText
 class MyApp(ShowBase):
     def __init__(self):
         super().__init__()
+        super().init()
+
+        # Парсим аргументы командной строки
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--data', type=str, help='JSON-данные в строке')
+        args, _ = parser.parse_known_args()
+
+        self.history_id = None
+        self.user_id = None
+        self.scenario_id = None
+
+        if args.data:
+            try:
+                params = json.loads(args.data)
+                self.history_id = params.get('history_id')
+                self.user_id = params.get('user_id')
+                self.scenario_id = params.get('scenario_id')
+                print(f"Параметры получены: history_id={self.history_id}")
+            except json.JSONDecodeError as e:
+                print(f"Ошибка JSON: {e}")
+            except Exception as e:
+                print(f"Ошибка параметров: {e}")
+        else:
+            print("Запуск без параметров (тестовый режим)")
 
         font = self.loader.load_font("arial.ttf")
 
@@ -1242,6 +1270,29 @@ class MyApp(ShowBase):
         if hasattr(self, 'current_step_index'):
             del self.current_step_index
 
+        if not hasattr(self, 'history_id') or not self.history_id:
+            print("No active scenario to complete")
+            return
+
+        try:
+            response = requests.post(
+                'http://localhost:8000/dashboard/complete-scenario/',
+                json={
+                    'history_id': self.history_id,
+                    'status': 'completed'
+                },
+                headers={'Content-Type': 'application/json'}
+            )
+
+            if response.status_code == 200:
+                print("Scenario completed successfully")
+            else:
+                print(f"Error completing scenario: {response.text}")
+
+        except Exception as e:
+            print(f"Failed to send completion request: {e}")
+        finally:
+            sys.exit(0)
     def _execute_sequence(self, sequence, index=0):
         """Рекурсивно выполняет последовательность шагов"""
         if index >= len(sequence):
