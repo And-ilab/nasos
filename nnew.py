@@ -195,8 +195,10 @@ class MyApp(ShowBase):
         self.cam.look_at(self.model)
 
         valve6_geom = self.model.find("**/Manometr_Arrow")
+        self.valve6_geom = valve6_geom
         point = self.model.find("**/point8")
         valve5_geom = self.model.find("**/COMPOUND2")
+        self.valve5_geom = valve5_geom
 
         self.valve6_moving = False
         self.valve66_moving = False
@@ -208,11 +210,43 @@ class MyApp(ShowBase):
         else:
             print(f"✅ point1 позиция: {point1.get_pos(render)}")
 
+        valve5_geom = self.model.find("**/COMPOUND2")
         if valve5_geom.is_empty():
             print("❌ Рычаг не найден!")
         else:
-            print(f"✅ Рычаг позиция: {point1.get_pos(render)}")
+            print("✅ Рычаг найден")
+
+            pivot_node = self.model.find("**/point8")
+            if pivot_node.is_empty():
+                print("❌ Точка крепления не найдена!")
+                return
+            self.valve5_geom = valve5_geom
+            original_mat = valve5_geom.get_mat(self.model)
+            pivot_pos = pivot_node.get_pos(self.model)
+            valve5_pos = valve5_geom.get_pos(self.model)
+
+            self.valve5_root = self.model.attach_new_node("valve5_root")
+            self.valve5_root.set_pos(pivot_pos)
+
+            self.valve5_pivot = self.valve5_root.attach_new_node("valve5_pivot")
+
+            valve5_geom.reparent_to(self.valve5_pivot)
+            self.valve5 = valve5_geom
+            valve5_geom.set_mat(original_mat)
+
+            relative_pos = valve5_pos - pivot_pos
+            valve5_geom.set_pos(relative_pos)
+
+            saved_pos = valve5_geom.get_pos()
+            valve5_geom.set_pos(0, 0, 0)
+
+            valve5_geom.set_pos(saved_pos)
+            self.valve5.name = "Задвижка на Лафетный ствол"
+            self.valve5_pivot.set_p(0)
+            self.valve5_target_angle = 85
             self.valve5_moving = False
+            self.valve5_direction = 1
+
 
         if point.is_empty():
             print("❌ вау не найден.")
@@ -323,7 +357,7 @@ class MyApp(ShowBase):
             print("❌ Вентиль 2 или точка вращения не найдены!2222")
         else:
             print("✅ Вентиль 2 и точка вращения найдены")
-
+            self.valve22_geom = valve22_geom
             original_mat = valve22_geom.get_mat(self.model)
             pivot_pos = point4.get_pos(self.model)
             valve22_pos = valve22_geom.get_pos(self.model)
@@ -353,6 +387,7 @@ class MyApp(ShowBase):
 
         valve4_geom = self.model.find("**/COMPOUND3")
         if valve4_geom.is_empty():
+
             print("❌ Рычаг не найден!")
         else:
             print("✅ Рычаг найден")
@@ -361,7 +396,7 @@ class MyApp(ShowBase):
             if pivot_node.is_empty():
                 print("❌ Точка крепления не найдена!")
                 return
-
+            self.valve4_geom = valve4_geom
             original_mat = valve4_geom.get_mat(self.model)
             pivot_pos = pivot_node.get_pos(self.model)
             valve4_pos = valve4_geom.get_pos(self.model)
@@ -389,25 +424,6 @@ class MyApp(ShowBase):
             self.valve4_direction = 1
             self.valve4.name = "Задвижка «Из цистерны»"
 
-            # Полностью отключаем текстуру
-
-            #valve4_geom.set_color(1, 0, 0, 1)
-
-            # valve4_geom.set_color_scale(1, 0, 0, 1)  # Красный
-            #valve4_geom.set_color_scale(1, 1, 0, 0.4)
-
-            # Включение прозрачности (обязательно!)
-
-            #
-            # # Включение прозрачности
-            # valve4_geom.set_transparency(TransparencyAttrib.M_alpha)
-            # from panda3d.core import Shader
-            # shader = Shader.make(Shader.SL_GLSL,
-            #                      vertex="void main() { gl_Position = ftransform(); }",
-            #                      fragment="void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }"
-            #                      )
-            # valve4_geom.set_shader(shader)
-
             print(f"Позиция корня: {self.valve4_root.get_pos(render)}")
             print(f"Позиция pivot: {self.valve4_pivot.get_pos(render)}")
             print(f"Позиция геометрии: {valve4_geom.get_pos(render)}")
@@ -417,6 +433,7 @@ class MyApp(ShowBase):
 
         valve13_geom = self.model.find("**/COMPOUND5")
         point13 = self.model.find("**/point3")
+        self.valve13_geom = valve13_geom
         if point13.is_empty():
             print("❌ point11 не найден!")
         else:
@@ -463,6 +480,7 @@ class MyApp(ShowBase):
 
         valve44_geom = self.model.find("**/COMPOUND4")
         point44 = self.model.find("**/point6")
+        self.valve44_geom = valve44_geom
         if point44.is_empty():
             print("❌ point11 не найден!")
         else:
@@ -508,6 +526,7 @@ class MyApp(ShowBase):
 
         valve8_geom = self.model.find("**/ COMPOUND8")
         point8 = self.model.find("**/point9.001")
+        self.valve8_geom = valve8_geom
         if valve8_geom.is_empty():
             print("❌ 8Рычаг не найден!")
         else:
@@ -546,6 +565,7 @@ class MyApp(ShowBase):
 
         valve12_geom = self.model.find("**/COMPOUND12")
         point12 = self.model.find("**/point9.004")
+        self.valve12_geom = valve12_geom
         if valve12_geom.is_empty():
             print("❌ 12Рычаг не найден!")
         else:
@@ -585,6 +605,7 @@ class MyApp(ShowBase):
 
         valve111_geom = self.model.find("**/COMPOUND11")
         point111 = self.model.find("**/point9.003")
+        self.valve111_geom = valve111_geom
         if valve111_geom.is_empty():
             print("❌ 888Рычаг не найден!")
         else:
@@ -675,6 +696,7 @@ class MyApp(ShowBase):
         #     self.debug_marker.set_color(1, 0, 0, 1)
 
         valve99_geom = self.model.find("**/COMPOUND99")
+        self.valve99_geom = valve99_geom
         if valve99_geom.is_empty():
             print("❌ 99Рычаг не найден!")
         else:
@@ -1103,58 +1125,22 @@ class MyApp(ShowBase):
         self._execute_next_step()
 
     def recolor_object(self, valve_geom, recolor=1):
-        # if valve_geom.is_empty():
-        #     print(valve_geom)
-        #     print("⚠️ Объект для перекрашивания не найден!")
-        #     return
-
-        #original_state = valve_geom.get_state()
-        #print(original_state)
-        #
-        # print(self.valve2_geom)
-        # valve2_geom = self.model.find("**/COMPOUND1")
-        # print(valve2_geom)
-        # print('+')
-        # valve_geom = self.valve2_geom
-       # original_light_state = valve_geom.get_light_off()
-      #  original_color_state = valve_geom.get_color_off()
-#        original_transparency = valve_geom.get_transparency()
-    #    original_color = valve_geom.get_color() if hasattr(valve_geom, 'get_color') else None
-
         try:
             if recolor == 1:
                 if not valve_geom.is_empty():
-                #     valve_geom.clear_texture()
-                #     valve_geom.set_light_off(True)
-                #     valve_geom.set_color_off()
-                #     valve_geom.set_transparency(TransparencyAttrib.M_alpha)
-                #     valve_geom.set_color(1, 1, 0.5, 0.5)  # Желтый с прозрачностью
-
-                # Сохраняем оригинальные настройки
-
-                #      valve_geom.clear_texture()
-                #      valve_geom.set_light_off(True)
-                #      valve_geom.set_color_off()
-                #      valve_geom.set_transparency(TransparencyAttrib.M_alpha)
-                #      valve_geom.set_color(1, 1, 0.5, 0.5)
                     self.add_outline_shader(valve_geom)
-                   # valve_geom.set_shader_off()
 
-
-
-
-
-            #valve_geom.clear_color()  # Убираем наш желтый цвет
-
-
-            # else:
-            #     if not valve_geom.is_empty():
-            #         pass
+            else:
+                valve_geom.set_shader_off()
+                valve_geom.set_transparency(TransparencyAttrib.M_none)
         except Exception as e:
             print(f"⚠️ Ошибка при перекрашивании: {str(e)}")
 
-    def add_outline_shader(self, valve_geom):
-        """Добавляет обводку через шейдер"""
+
+
+
+    def add_outline_shader(self, valve_geom, alpha=0.3):
+        """Добавляет обводку через шейдер с управляемой прозрачностью"""
         from panda3d.core import Shader
 
         vertex_shader = """
@@ -1166,29 +1152,31 @@ class MyApp(ShowBase):
 
         fragment_shader = """
         #version 130
-        uniform vec4 outline_color;
+        uniform vec3 outline_color;
+        uniform float alpha;
         void main() {
-            gl_FragColor = outline_color;
+            gl_FragColor = vec4(outline_color, alpha);
         }
         """
 
         shader = Shader.make(Shader.SL_GLSL, vertex_shader, fragment_shader)
         valve_geom.set_shader(shader)
-        valve_geom.set_shader_input("outline_color", (1, 1, 0.5, 0.8))
+        valve_geom.set_shader_input("outline_color", (1, 1, 0.5))  # Только RGB
+        valve_geom.set_shader_input("alpha", alpha)  # Прозрачность отдельно
+        valve_geom.set_transparency(TransparencyAttrib.M_alpha)
 
 
     def remove_outline(self, outline_node):
         """Удаляет обводку"""
         if outline_node:
             outline_node.remove_node()
+
     def start_first_scenario(self):
         self.training_mode = True
         self.auto_mode = True
 
 
         self.scenario_sequence = [
-            ("Откройте напорную задвижку на пожар",
-             lambda: self.rotate_valve2(1)),
             ("Выключите сцепление из насосного отсека", lambda: self.rotate_valve1(1)),
             ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
             ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
@@ -1270,7 +1258,7 @@ class MyApp(ShowBase):
                 "Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
                 lambda: self.rotate_valve11(1)),
             (
-                "",
+                "Конец сценария",
                 lambda: self.end()),
         ]
         self.current_step_index = 0
@@ -1375,7 +1363,7 @@ class MyApp(ShowBase):
             ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
 
             ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
-            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
+            ("Закройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
             ("Включите сцепление(стрелка манометра поднимается до 3атм)",
              lambda: self.rotate_valve1_with_camera(1)),
             ("Откройте напорную задвижку",
@@ -2455,7 +2443,8 @@ class MyApp(ShowBase):
             self.valve2_moving = True
             self.valve2_start_time = globalClock.getFrameTime()
             self.create_preview_camera(self.valve2.name)
-            self.recolor_object(self.valve2_geom)
+            self.recolor_object(self.valve2_geom, direction)
+
             self.taskMgr.add(self.move_valve2_task, "MoveValve2Task")
 
 
@@ -2465,6 +2454,7 @@ class MyApp(ShowBase):
             self.valve22_moving = True
             self.valve22_start_time = globalClock.getFrameTime()
             self.create_preview_camera(self.valve22.name)
+            self.recolor_object(self.valve22_geom, direction)
             self.taskMgr.add(self.move_valve22_task, "MoveValve22Task")
 
     def rotate_valve3(self, direction):
@@ -2482,18 +2472,21 @@ class MyApp(ShowBase):
             self.valve4_start_time = globalClock.getFrameTime()
             self.create_preview_camera(self.valve4.name)
             self.play_sound("media/s1/audio2.mp3")
+            self.recolor_object(self.valve4_geom, direction)
             self.taskMgr.add(self.move_valve4_task, "MoveValve4Task")
 
     def rotate_valve5(self, direction):
+        print('точка входа')
         if hasattr(self, 'valve5_pivot'):
             if (direction > 0 and hasattr(self, 'valve5_is_open') and self.valve5_is_open) or \
                     (direction < 0 and hasattr(self, 'valve5_is_open') and not self.valve5_is_open):
+                print('how')
                 self.on_step_completed()
                 return
-
+            print('1')
             if not hasattr(self, 'valve5_current_angle'):
                 self.valve5_current_angle = self.valve5_pivot.get_p()
-
+            print('1')
             self.valve5_direction = direction
             self.valve5_moving = True
             self.valve5_start_time = globalClock.getFrameTime()
@@ -2504,7 +2497,10 @@ class MyApp(ShowBase):
             else:
                 self.valve5_target_angle_change = -85
 
+
+            self.recolor_object(self.valve5_geom,direction)
             self.create_preview_camera(self.valve5.name)
+            print('2')
             self.taskMgr.add(self.move_valve5_task, "MoveValve5Task")
 
 
@@ -2528,6 +2524,8 @@ class MyApp(ShowBase):
             else:
                 self.valve99_target_angle_change = -85
 
+
+            self.recolor_object(self.valve99_geom, direction)
             self.create_preview_camera(self.valve99.name)
             self.taskMgr.add(self.move_valve99_task, "MoveValve5Task")
 
@@ -2555,6 +2553,7 @@ class MyApp(ShowBase):
             self.play_sound("media/s1/audio2.mp3")
 
             self.create_preview_camera(self.valve111.name)
+            self.recolor_object(self.valve111_geom, direction)
             self.taskMgr.add(self.move_valve111_task, "MoveValve111Task")
 
     def rotate_valve8(self, direction):
@@ -2578,6 +2577,8 @@ class MyApp(ShowBase):
             else:
                 self.valve8_target_angle_change = -85
 
+
+            self.recolor_object(self.valve8_geom, direction)
             self.create_preview_camera(self.valve8.name)
             self.taskMgr.add(self.move_valve8_task, "MoveValve5Task")
 
@@ -2603,6 +2604,7 @@ class MyApp(ShowBase):
                 self.valve12_target_angle_change = -85
 
             self.create_preview_camera(self.valve12.name)
+            self.recolor_object(self.valve12_geom, direction)
             self.taskMgr.add(self.move_valve12_task, "MoveValve12Task")
 
     def rotate_valve6(self, direction):
@@ -2629,7 +2631,7 @@ class MyApp(ShowBase):
 
             self.play_sound("media/s3/audio1.mp3")
             self.create_preview_camera(self.valve13.name)
-
+            self.recolor_object(self.valve13_geom, direction)
             self.taskMgr.add(self.move_valve13_task, "MoveValve13Task")
 
 
@@ -2658,6 +2660,7 @@ class MyApp(ShowBase):
 
             self.play_sound("media/s3/audio1.mp3")
             self.create_preview_camera(self.valve44.name)
+            self.recolor_object(self.valve44_geom, direction)
             self.taskMgr.add(self.move_valve44_task, "MoveValve44Task")
 
     def calculate_angle_for_position(self, position):
