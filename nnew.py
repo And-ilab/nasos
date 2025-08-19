@@ -1,7 +1,7 @@
 from direct.gui import DirectGui
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import DirectionalLight, AmbientLight, Vec4, TextNode, FrameBufferProperties, WindowProperties, \
-    GraphicsPipe, Vec3, Point3, Plane, TransparencyAttrib
+    GraphicsPipe, Vec3, Point3, Plane, TransparencyAttrib, RenderState, Material
 from direct.gui.DirectGui import DirectFrame, DirectLabel
 from panda3d.core import CollisionTraverser, CollisionNode, CollisionHandlerQueue, CollisionRay, CollisionBox, BitMask32
 from panda3d.core import Filename, TextFont, Loader
@@ -15,6 +15,9 @@ from direct.gui.DirectGui import DirectFrame, DirectLabel, DirectButton, DirectS
 import math
 from panda3d.core import CollisionTraverser, CollisionHandlerQueue, CollisionRay, BitMask32, TextNode
 from direct.gui.OnscreenText import OnscreenText
+from panda3d.core import Shader, TransparencyAttrib
+from panda3d.core import TextureStage, TexGenAttrib  # Добавляем импорт
+from panda3d.core import TextureAttrib, ColorAttrib, MaterialAttrib, TransparencyAttrib, LightAttrib
 
 
 class MyApp(ShowBase):
@@ -88,6 +91,20 @@ class MyApp(ShowBase):
                 'method': 'nineth_scenario'
             },
         ]
+
+        outline_shader = Shader.load(Shader.SL_GLSL,
+                                     vertex="""
+            void main() {
+                gl_Position = ftransform();
+            }
+            """,
+                                     fragment="""
+            uniform vec4 outline_color;
+            void main() {
+                gl_FragColor = outline_color;
+            }
+            """
+                                     )
 
         offset = Vec3(1.1, 6, -0.3)
 
@@ -248,45 +265,54 @@ class MyApp(ShowBase):
             self.plane10.name = "Пульт"
 
         valve2_geom = self.model.find("**/COMPOUND1")
+        self.valve2_geom = valve2_geom
         point5 = self.model.find("**/point5")
 
-
         if valve2_geom.is_empty() or point5.is_empty():
-            print("❌ Вентиль 2 или точка вращения не найдены!")
+            print("❌ Вентиль 2 или точка вращения не найдены!111")
         else:
             print("✅ Вентиль 2 и точка вращения найдены")
 
-
-            original_mat = valve2_geom.get_mat(self.model)
+            # 1. Получаем трансформации
             pivot_pos = point5.get_pos(self.model)
             valve2_pos = valve2_geom.get_pos(self.model)
+            valve2_hpr = valve2_geom.get_hpr(self.model)
 
 
+            # 2. Создаем иерархию узлов
             self.valve2_root = self.model.attach_new_node("valve2_root")
             self.valve2_root.set_pos(pivot_pos)
 
             self.valve2_pivot = self.valve2_root.attach_new_node("valve2_pivot")
+            self.valve2_pivot.set_pos(0, 0, 0)
 
-
+            # 3. Переносим геометрию
             valve2_geom.wrt_reparent_to(self.valve2_pivot)
+            valve2_geom.set_pos(valve2_pos - pivot_pos)
+            valve2_geom.set_hpr(valve2_hpr)
+
+            # 4. Настройки вращения
             self.valve2 = valve2_geom
-            valve2_geom.set_mat(original_mat)
-
-
-            relative_pos = valve2_pos - pivot_pos
-            valve2_geom.set_pos(relative_pos)
-
-
-            saved_pos = valve2_geom.get_pos()
-            valve2_geom.set_pos(0, 0, 0)
-
-            valve2_geom.set_pos(saved_pos)
             self.valve2.name = 'Левая напорная задвижка'
-
-            self.valve2_pivot.set_p(0)
+            self.valve2_pivot.set_hpr(0, 0, 0)
             self.valve2_target_angle = 90
             self.valve2_moving = False
             self.valve2_direction = 1
+
+            # 5. Создаем контур (добавленный код)
+
+           # self.valve2_outline = self.create_simple_outline(valve2_geom)
+            # if self.valve2_outline:
+            #     self.valve2_outline.hide()  # Скрываем по умолчанию
+
+            # 6. Отладка
+            self.debug_marker = self.loader.loadModel("models/smiley")
+            self.debug_marker.reparent_to(self.render)
+            self.debug_marker.set_pos(pivot_pos)
+            self.debug_marker.set_scale(0.1)
+            self.debug_marker.set_color(1, 0, 0, 1)
+
+        # Добавляем метод в класс (вне этого блока кода)
 
 
         valve22_geom = self.model.find("**/COMPOUND6")
@@ -294,7 +320,7 @@ class MyApp(ShowBase):
 
 
         if valve22_geom.is_empty() or point4.is_empty():
-            print("❌ Вентиль 2 или точка вращения не найдены!")
+            print("❌ Вентиль 2 или точка вращения не найдены!2222")
         else:
             print("✅ Вентиль 2 и точка вращения найдены")
 
@@ -362,6 +388,26 @@ class MyApp(ShowBase):
             self.valve4_moving = False
             self.valve4_direction = 1
             self.valve4.name = "Задвижка «Из цистерны»"
+
+            # Полностью отключаем текстуру
+
+            #valve4_geom.set_color(1, 0, 0, 1)
+
+            # valve4_geom.set_color_scale(1, 0, 0, 1)  # Красный
+            #valve4_geom.set_color_scale(1, 1, 0, 0.4)
+
+            # Включение прозрачности (обязательно!)
+
+            #
+            # # Включение прозрачности
+            # valve4_geom.set_transparency(TransparencyAttrib.M_alpha)
+            # from panda3d.core import Shader
+            # shader = Shader.make(Shader.SL_GLSL,
+            #                      vertex="void main() { gl_Position = ftransform(); }",
+            #                      fragment="void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }"
+            #                      )
+            # valve4_geom.set_shader(shader)
+
             print(f"Позиция корня: {self.valve4_root.get_pos(render)}")
             print(f"Позиция pivot: {self.valve4_pivot.get_pos(render)}")
             print(f"Позиция геометрии: {valve4_geom.get_pos(render)}")
@@ -579,42 +625,54 @@ class MyApp(ShowBase):
             self.valve111_moving = False
             self.valve111_direction = 1
 
-        valve5_geom = self.model.find("**/COMPOUND2")
-        if valve5_geom.is_empty():
-            print("❌ Рычаг не найден!")
-        else:
-            print("✅ Рычаг найден")
-
-            pivot_node = self.model.find("**/point8")
-            if pivot_node.is_empty():
-                print("❌ Точка крепления не найдена!")
-                return
-
-            original_mat = valve5_geom.get_mat(self.model)
-            pivot_pos = pivot_node.get_pos(self.model)
-            valve5_pos = valve5_geom.get_pos(self.model)
-
-            self.valve5_root = self.model.attach_new_node("valve5_root")
-            self.valve5_root.set_pos(pivot_pos)
-
-            self.valve5_pivot = self.valve5_root.attach_new_node("valve5_pivot")
-
-            valve5_geom.reparent_to(self.valve5_pivot)
-            self.valve5 = valve5_geom
-            valve5_geom.set_mat(original_mat)
-
-            relative_pos = valve5_pos - pivot_pos
-            valve5_geom.set_pos(relative_pos)
-
-            saved_pos = valve5_geom.get_pos()
-            valve5_geom.set_pos(0, 0, 0)
-
-            valve5_geom.set_pos(saved_pos)
-            self.valve5.name = "Задвижка на Лафетный ствол"
-            self.valve5_pivot.set_p(0)
-            self.valve5_target_angle = 85
-            self.valve5_moving = False
-            self.valve5_direction = 1
+        # valve2_geom = self.model.find("**/COMPOUND1")
+        # print(111)
+        # print(valve2_geom)
+        # point5 = self.model.find("**/point5")
+        #
+        # if valve2_geom.is_empty() or point5.is_empty():
+        #     print("❌ Вентиль 2 или точка вращения не найдены!")
+        # else:
+        #     print("✅ Вентиль 2 и точка вращения найдены")
+        #
+        #     # Получаем начальные трансформации
+        #     original_mat = valve2_geom.get_mat(self.model)
+        #     pivot_pos = point5.get_pos(self.model)
+        #     valve2_pos = valve2_geom.get_pos(self.model)
+        #     valve2_hpr = valve2_geom.get_hpr(self.model)  # Сохраняем начальные углы поворота
+        #
+        #     # Создаем иерархию узлов
+        #     self.valve2_root = self.model.attach_new_node("valve2_root")
+        #     self.valve2_root.set_pos(pivot_pos)
+        #
+        #     self.valve2_pivot = self.valve2_root.attach_new_node("valve2_pivot")
+        #     self.valve2_pivot.set_pos(0, 0, 0)
+        #
+        #     # Переносим геометрию с сохранением трансформации
+        #     valve2_geom.wrt_reparent_to(self.valve2_pivot)
+        #     self.valve2 = valve2_geom
+        #     valve2_geom.set_mat(original_mat)
+        #
+        #     # Устанавливаем относительную позицию
+        #     relative_pos = valve2_pos - pivot_pos
+        #     valve2_geom.set_pos(relative_pos)
+        #
+        #     # Восстанавливаем начальный поворот (45 градусов)
+        #     valve2_geom.set_hpr(valve2_hpr)
+        #
+        #     # Настройки вращения
+        #     self.valve2.name = 'Левая напорная задвижка'
+        #     self.valve2_pivot.set_p(0)  # Сброс начального угла вращения
+        #     self.valve2_target_angle = 90  # Угол поворота
+        #     self.valve2_moving = False
+        #     self.valve2_direction = 1
+        #
+        #     # Отладочный маркер
+        #     self.debug_marker = self.loader.loadModel("models/smiley")
+        #     self.debug_marker.reparent_to(self.render)
+        #     self.debug_marker.set_pos(pivot_pos)
+        #     self.debug_marker.set_scale(0.1)
+        #     self.debug_marker.set_color(1, 0, 0, 1)
 
         valve99_geom = self.model.find("**/COMPOUND99")
         if valve99_geom.is_empty():
@@ -777,6 +835,16 @@ class MyApp(ShowBase):
         self.preview_buffer = None
         self.preview_card = None
         self.setup_gui(font)
+
+    # def create_outline(obj, color=(1, 0, 0, 1), thickness=1.03):
+    #     """Создает контур вокруг объекта"""
+    #     outline = obj.copy_to(obj.get_parent())
+    #     outline.set_scale(thickness)
+    #     outline.set_color(color)
+    #     outline.set_transparency(TransparencyAttrib.M_alpha)
+    #     outline.set_light_off(True)  # Игнорировать освещение
+    #     outline.set_render_mode_wireframe()  # Контурный вид
+    #     return outline
 
 
     def load_sounds(self):
@@ -1034,6 +1102,85 @@ class MyApp(ShowBase):
 
         self._execute_next_step()
 
+    def recolor_object(self, valve_geom, recolor=1):
+        # if valve_geom.is_empty():
+        #     print(valve_geom)
+        #     print("⚠️ Объект для перекрашивания не найден!")
+        #     return
+
+        #original_state = valve_geom.get_state()
+        #print(original_state)
+        #
+        # print(self.valve2_geom)
+        # valve2_geom = self.model.find("**/COMPOUND1")
+        # print(valve2_geom)
+        # print('+')
+        # valve_geom = self.valve2_geom
+       # original_light_state = valve_geom.get_light_off()
+      #  original_color_state = valve_geom.get_color_off()
+#        original_transparency = valve_geom.get_transparency()
+    #    original_color = valve_geom.get_color() if hasattr(valve_geom, 'get_color') else None
+
+        try:
+            if recolor == 1:
+                if not valve_geom.is_empty():
+                #     valve_geom.clear_texture()
+                #     valve_geom.set_light_off(True)
+                #     valve_geom.set_color_off()
+                #     valve_geom.set_transparency(TransparencyAttrib.M_alpha)
+                #     valve_geom.set_color(1, 1, 0.5, 0.5)  # Желтый с прозрачностью
+
+                # Сохраняем оригинальные настройки
+
+                #      valve_geom.clear_texture()
+                #      valve_geom.set_light_off(True)
+                #      valve_geom.set_color_off()
+                #      valve_geom.set_transparency(TransparencyAttrib.M_alpha)
+                #      valve_geom.set_color(1, 1, 0.5, 0.5)
+                    self.add_outline_shader(valve_geom)
+                   # valve_geom.set_shader_off()
+
+
+
+
+
+            #valve_geom.clear_color()  # Убираем наш желтый цвет
+
+
+            # else:
+            #     if not valve_geom.is_empty():
+            #         pass
+        except Exception as e:
+            print(f"⚠️ Ошибка при перекрашивании: {str(e)}")
+
+    def add_outline_shader(self, valve_geom):
+        """Добавляет обводку через шейдер"""
+        from panda3d.core import Shader
+
+        vertex_shader = """
+        #version 130
+        void main() {
+            gl_Position = ftransform();
+        }
+        """
+
+        fragment_shader = """
+        #version 130
+        uniform vec4 outline_color;
+        void main() {
+            gl_FragColor = outline_color;
+        }
+        """
+
+        shader = Shader.make(Shader.SL_GLSL, vertex_shader, fragment_shader)
+        valve_geom.set_shader(shader)
+        valve_geom.set_shader_input("outline_color", (1, 1, 0.5, 0.8))
+
+
+    def remove_outline(self, outline_node):
+        """Удаляет обводку"""
+        if outline_node:
+            outline_node.remove_node()
     def start_first_scenario(self):
         self.training_mode = True
         self.auto_mode = True
@@ -1041,7 +1188,7 @@ class MyApp(ShowBase):
 
         self.scenario_sequence = [
             ("Откройте напорную задвижку на пожар",
-             lambda: self.rotate_valve22(1)),
+             lambda: self.rotate_valve2(1)),
             ("Выключите сцепление из насосного отсека", lambda: self.rotate_valve1(1)),
             ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
             ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
@@ -1621,27 +1768,17 @@ class MyApp(ShowBase):
             return task.done
 
         elapsed = globalClock.getFrameTime() - self.valve2_start_time
-        progress = min(elapsed / 5, 1.0)
+        progress = min(elapsed / 2.0, 1.0)  # 2 секунды на поворот
 
-        if self.valve2_direction > 0:
-            target_angle = self.valve2_target_angle
-        else:
-            target_angle = 0
-
-        new_angle = progress * target_angle
-        self.valve2_pivot.set_p(new_angle)
+        # Вращение ВОКРУГ ЛОКАЛЬНОЙ ОСИ Y (как у valve13)
+        angle = progress * self.valve2_target_angle * self.valve2_direction
+        self.valve2_pivot.set_p(angle)  # Используем set_h() вместо set_p()
 
         if progress >= 1.0:
             self.valve2_moving = False
-            if self.training_mode:
-                self.on_step_completed()
-
-                self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
             return task.done
 
         return task.cont
-
-
     def move_valve22_task(self, task):
         if not hasattr(self, 'valve22_pivot') or not self.valve22_moving:
             return task.done
@@ -2258,6 +2395,7 @@ class MyApp(ShowBase):
             base.graphicsEngine.renderFrame()
             self.create_preview_camera(self.plane14.name)
 
+
             def update_camera(task):
                 base.graphicsEngine.renderFrame()
                 return task.done
@@ -2312,15 +2450,16 @@ class MyApp(ShowBase):
 
         print(f"Вращаем вентиль 2, направление: {direction}")
         if hasattr(self, 'valve2_pivot'):
+            #self.recolor_object(2)
             self.valve2_direction = direction
             self.valve2_moving = True
             self.valve2_start_time = globalClock.getFrameTime()
             self.create_preview_camera(self.valve2.name)
+            self.recolor_object(self.valve2_geom)
             self.taskMgr.add(self.move_valve2_task, "MoveValve2Task")
 
 
     def rotate_valve22(self, direction):
-        print(f"Вращаем вентиль 2, направление: {direction}")
         if hasattr(self, 'valve22_pivot'):
             self.valve22_direction = direction
             self.valve22_moving = True
@@ -2502,21 +2641,19 @@ class MyApp(ShowBase):
             self.valve44_moving = True
             self.valve44_start_time = globalClock.getFrameTime()
 
-            # Специальный режим для 4 оборотов
             if position == 10:
                 self.valve44_sequence = [
-                    {"target": 6, "time": 1.5},  # 1.5 сек до положения 6
-                    {"target": 1, "time": 1.5},  # 1.5 сек до положения 1
-                    {"target": 6, "time": 1.5},  # повтор
-                    {"target": 1, "time": 1.5}  # повтор
+                    {"target": 6, "time": 1.5},
+                    {"target": 1, "time": 1.5},
+                    {"target": 6, "time": 1.5},
+                    {"target": 1, "time": 1.5}
                 ]
                 self.valve44_sequence_index = 0
                 self.valve44_target_angle = self.calculate_angle_for_position(6)
             elif position is not None:
-                # Обычный режим с одним положением
+
                 self.valve44_target_angle = self.calculate_angle_for_position(position)
             else:
-                # Непрерывное вращение
                 self.valve44_target_angle = 360 if direction > 0 else 0
 
             self.play_sound("media/s3/audio1.mp3")
@@ -2525,7 +2662,7 @@ class MyApp(ShowBase):
 
     def calculate_angle_for_position(self, position):
         """Вычисляет угол для заданного положения (1-6)"""
-        return - (position - 1) * 60  # 0° для положения 1, -300° для положения 6
+        return - (position - 1) * 60
 
     def on_step_completed(self):
         """Обрабатывает завершение шага сценария"""
@@ -2534,7 +2671,6 @@ class MyApp(ShowBase):
 
         scenario = self.scenarios[self.current_scenario]
 
-        # Для сценариев типа 'method' просто завершаем выполнение
         if scenario.get('type') == 'method':
             self.training_mode = False
             self.auto_mode = False
