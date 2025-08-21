@@ -200,6 +200,69 @@ class MyApp(ShowBase):
         valve5_geom = self.model.find("**/COMPOUND2")
         self.valve5_geom = valve5_geom
 
+        #
+        pipe = self.render.find("**/pCylinder3.001")
+        self.left_pipe = pipe
+
+        water_shader = Shader.make('''
+            void vshader(float4 vtx_position : POSITION,
+                        float2 vtx_texcoord0 : TEXCOORD0,
+                        out float4 l_position : POSITION,
+                        out float2 l_texcoord0 : TEXCOORD0,
+                        uniform float4x4 mat_modelproj) {
+                l_position = mul(mat_modelproj, vtx_position);
+                l_texcoord0 = vtx_texcoord0;
+            }
+
+            void fshader(float2 l_texcoord0 : TEXCOORD0,
+                        out float4 o_color : COLOR,
+                        uniform float time) {
+                // Движение пены вдоль трубы
+                float flow_speed = 1.5;
+                float flow_pos = l_texcoord0.x + time * flow_speed;
+
+                // Создаем узор пузырьков
+                float bubbles1 = sin(l_texcoord0.x * 35.0 + flow_pos * 10.0) * 0.5 + 0.5;
+                float bubbles2 = cos(l_texcoord0.x * 28.0 + flow_pos * 8.0 + 2.0) * 0.5 + 0.5;
+                float bubbles3 = sin(l_texcoord0.x * 42.0 + flow_pos * 12.0 + 4.0) * 0.5 + 0.5;
+
+                // Комбинируем пузырьки
+                float bubble_pattern = bubbles1 * bubbles2 * bubbles3;
+                bubble_pattern = pow(bubble_pattern, 2.0); // Делаем более четкими
+
+                // Текстура пены
+                float foam_texture = sin(flow_pos * 8.0) * cos(l_texcoord0.x * 6.0);
+                foam_texture = abs(foam_texture) * 0.7;
+
+                // Основной цвет пены
+                vec4 foam_color = vec4(0.9, 0.92, 0.95, 0.85);
+
+                // Добавляем вариации цвета для реализма
+                foam_color.r -= bubble_pattern * 0.1;
+                foam_color.g -= bubble_pattern * 0.08;
+                foam_color.b += bubble_pattern * 0.05;
+
+                // Делаем некоторые области более плотными
+                float density = foam_texture * 0.5 + bubble_pattern * 0.3;
+                foam_color.a *= (0.7 + density * 0.3);
+
+                o_color = foam_color;
+            }
+        ''', Shader.SL_Cg)
+
+        self.left_pipe.setShader(water_shader)
+        self.left_pipe.setTransparency(TransparencyAttrib.MAlpha)
+        self.left_pipe.setShaderInput("time", 0.0)
+
+        # Добавляем обновление времени
+        def update_water(task):
+            self.left_pipe.setShaderInput("time", globalClock.getFrameTime())
+            return task.cont
+
+        self.taskMgr.add(update_water, "update_water")
+
+
+
         self.valve6_moving = False
         self.valve66_moving = False
         self.model.ls()
@@ -868,6 +931,36 @@ class MyApp(ShowBase):
     #     outline.set_render_mode_wireframe()  # Контурный вид
     #     return outline
 
+    def apply_water_effect(self, pipe):
+        """Применяем эффект воды к трубе"""
+        from panda3d.core import TransparencyAttrib
+
+        # 1. Делаем трубу полупрозрачной
+        pipe.set_transparency(TransparencyAttrib.M_alpha)
+
+        # 2. Устанавливаем синий цвет воды
+        pipe.set_color(0.3, 0.5, 0.8, 0.6)  # R, G, B, A
+
+        # 3. Загружаем текстуру воды (если есть)
+        try:
+            water_tex = loader.loadTexture("models/water_texture.jpg")
+            pipe.set_texture(water_tex)
+        except:
+            print("Текстура воды не найдена, используем простой цвет")
+
+        # 4. Запускаем анимацию течения
+        self.start_water_animation(pipe)
+
+    # def setup_water_pipe(self):
+    #     """Простая настройка трубы с водой (без текстуры)"""
+    #     pipe = self.pipe
+    #
+    #     if pipe and not pipe.is_empty():
+    #         from panda3d.core import TransparencyAttrib
+    #
+    #         # Просто устанавливаем цвет и прозрачность
+    #         pipe.set_transparency(TransparencyAttrib.M_alpha)
+    #         pipe.set_color(0.2, 0.4, 0.8, 0.6)  # Синий, полупрозрачный
 
     def load_sounds(self):
         self.sounds = {}
