@@ -90,6 +90,22 @@ class MyApp(ShowBase):
                 'type': 'method',
                 'method': 'nineth_scenario'
             },
+            {
+                'name': "Забор воды из открытого водоисточника при помощи гидроэлеваторной системы(насос-гидроэлеватор-цистерна)",
+                'type': 'method',
+                'method': 'ten_scenario'
+            },
+            {
+                'name': "Забор воды из открытого водоисточника при помощи гидроэлеваторной системы(насос-гидроэлеватор-водосборник-насос)",
+                'type': 'method',
+                'method': 'eleventh__scenario'
+            },
+            {
+                'name': "Проверка на сухой вакуум",
+                'type': 'method',
+                'method': 'twelfth_scenario'
+            },
+
         ]
 
         outline_shader = Shader.load(Shader.SL_GLSL,
@@ -202,9 +218,18 @@ class MyApp(ShowBase):
 
         #
         pipe = self.render.find("**/pCylinder3.001")
-        self.left_pipe = pipe
+        second_pipe = self.render.find("**/pCylinder2.001")
+        center_pipe0 = self.render.find("**/polySurface8")
+        center_pipe1 = self.render.find("**/pTorus4")
+        center_pipe2 = self.render.find("**/mirrored_y_3")
+        self.center_pipe0 = center_pipe0
+        self.center_pipe1 = center_pipe1
+        self.center_pipe2 = center_pipe2
+        #center_
+        self.pipe_left = pipe
+        self.pipe_left_high = second_pipe
 
-        water_shader = Shader.make('''
+        self.foam_shader = Shader.make('''
             void vshader(float4 vtx_position : POSITION,
                         float2 vtx_texcoord0 : TEXCOORD0,
                         out float4 l_position : POSITION,
@@ -250,16 +275,81 @@ class MyApp(ShowBase):
             }
         ''', Shader.SL_Cg)
 
-        self.left_pipe.setShader(water_shader)
-        self.left_pipe.setTransparency(TransparencyAttrib.MAlpha)
-        self.left_pipe.setShaderInput("time", 0.0)
+        self.water_shader = Shader.make('''
+            void vshader(float4 vtx_position : POSITION,
+                        float2 vtx_texcoord0 : TEXCOORD0,
+                        out float4 l_position : POSITION,
+                        out float2 l_texcoord0 : TEXCOORD0,
+                        uniform float4x4 mat_modelproj) {
+                l_position = mul(mat_modelproj, vtx_position);
+                l_texcoord0 = vtx_texcoord0;
+            }
 
+            void fshader(float2 l_texcoord0 : TEXCOORD0,
+                        out float4 o_color : COLOR,
+                        uniform float time) {
+
+                // Движение воды вдоль трубы
+                float flow_speed = 0.8;
+                float flow_pos = l_texcoord0.y + time * flow_speed;
+
+                // Создаем волны и рябь на поверхности воды
+                float waves1 = sin(l_texcoord0.x * 25.0 + flow_pos * 5.0) * 0.3;
+                float waves2 = cos(l_texcoord0.x * 18.0 + flow_pos * 3.0 + 1.5) * 0.2;
+                float waves3 = sin(l_texcoord0.x * 32.0 + flow_pos * 7.0 + 3.0) * 0.4;
+
+                // Комбинируем волны
+                float wave_pattern = (waves1 + waves2 + waves3) * 0.33;
+
+                // Создаем эффект глубины воды
+                float depth = 1.0 - abs(l_texcoord0.x - 0.5) * 2.0;
+                depth = clamp(depth, 0.3, 1.0);
+
+                // Основной цвет воды - синий с вариациями
+                float4 water_color = float4(0.15, 0.35, 0.65, 0.9);
+
+                // Добавляем градиент глубины
+                water_color.rgb *= (0.7 + depth * 0.3);
+                water_color.r -= depth * 0.1;
+                water_color.g += depth * 0.05;
+                water_color.b += depth * 0.15;
+
+                // Добавляем волновые искажения цвета
+                water_color.r += wave_pattern * 0.05;
+                water_color.g += wave_pattern * 0.03;
+                water_color.b -= wave_pattern * 0.02;
+
+                // Создаем эффект течения (струи)
+                float current = sin(flow_pos * 12.0) * 0.1;
+                water_color.a *= (0.85 + current * 0.15);
+
+                // Добавляем легкие блики (отражения света)
+                float specular = pow(max(0.0, sin(time * 2.0 + l_texcoord0.y * 20.0)), 8.0);
+                water_color.rgb += float3(specular * 0.25);
+
+                // Легкие пузырьки (меньше и реже чем у пены)
+                float bubbles = sin(l_texcoord0.x * 45.0 + flow_pos * 15.0) * 0.5 + 0.5;
+                bubbles = pow(bubbles, 4.0) * 0.2; // Более редкие и мелкие пузырьки
+                water_color.rgb += float3(bubbles * 0.1);
+
+                o_color = water_color;
+            }
+        ''', Shader.SL_Cg)
+
+        # self.left_pipe.setShader(water_shader)
+        # self.left_pipe.setTransparency(TransparencyAttrib.MAlpha)
+        # self.left_pipe.setShaderInput("time", 0.0)
+        #
+        # self.left_pipe_second.setShader(water_shader_second)
+        # self.left_pipe_second.setTransparency(TransparencyAttrib.MAlpha)
+        # self.left_pipe_second.setShaderInput("time", 0.0)
+        #
         # Добавляем обновление времени
-        def update_water(task):
-            self.left_pipe.setShaderInput("time", globalClock.getFrameTime())
-            return task.cont
-
-        self.taskMgr.add(update_water, "update_water")
+        # def update_water(task):
+        #     self.left_pipe.setShaderInput("time", globalClock.getFrameTime())
+        #     return task.cont
+        #
+        # self.taskMgr.add(update_water, "update_water")
 
 
 
@@ -930,6 +1020,60 @@ class MyApp(ShowBase):
     #     outline.set_light_off(True)  # Игнорировать освещение
     #     outline.set_render_mode_wireframe()  # Контурный вид
     #     return outline
+
+
+    # def show_effect(self, effect, geom):
+    #     if effect == water:
+    #         self.geom.setShader(self.water_shader)
+    #         self.geom.setTransparency(TransparencyAttrib.MAlpha)
+    #         self.geom.setShaderInput("time", 0.0)
+    #
+    #     elif effect = foam:
+    #         self.geom.setShader(self.water_shader)
+    #         self.geom.setTransparency(TransparencyAttrib.MAlpha)
+    #         self.geom.setShaderInput("time", 0.0)
+    #
+    #
+    #
+    # def show_effect(self, geom):
+    #     geom.setShaderOff()
+    #     geom.setTransparency(TransparencyAttrib.MNone)
+    #     geom.setDepthWrite(True)
+    #     geom.clearBin()
+    #     geom.clearShaderInputs()
+
+    def show_effect(self, effect, geom, duration=5.0):
+        self.original_shader = geom.getShader()
+        self.original_transparency = geom.getTransparency()
+        self.original_depth_write = geom.getDepthWrite()
+
+        if effect == "water":
+            print(self .pipe)
+            geom.setShader(self.water_shader)
+            geom.setTransparency(TransparencyAttrib.MAlpha)
+            geom.setBin("fixed", 40)  # Важно добавить!
+            geom.setDepthWrite(False)
+            geom.setShaderInput("time", 0.0)
+
+        elif effect == "foam":
+            geom.setShader(self.foam_shader)  # Исправлено: должно быть foam_shader
+            geom.setTransparency(TransparencyAttrib.MAlpha)
+            geom.setBin("fixed", 40)  # Важно добавить!
+            geom.setDepthWrite(False)
+            geom.setShaderInput("time", 0.0)
+
+        # Запускаем таймер для автоматического выключения через 5 секунд
+        taskMgr.doMethodLater(duration, lambda task: self.hide_effect(geom, task), "hide_effect_task")
+
+    def hide_effect(self, geom, task):
+        # Восстанавливаем оригинальные настройки
+        geom.setShaderOff()
+        geom.setTransparency(TransparencyAttrib.MNone)
+        geom.setDepthWrite(True)
+        geom.clearBin()
+        #geom.clearShaderInputs()
+
+        return task.done  # Обязательно возвращаем task.done
 
     def apply_water_effect(self, pipe):
         """Применяем эффект воды к трубе"""
@@ -1617,18 +1761,21 @@ class MyApp(ShowBase):
         self.current_step_index = 0
 
 
+
     def _execute_step(self, message, action):
         self.step_label['text'] = message
         self.current_action = action
         self.next_step_btn.show()
 
     def _execute_next_step(self):
+        # Сразу скрываем кнопку
+        self.next_step_btn.hide()
+
         if not hasattr(self, 'scenario_sequence'):
             return
 
         if self.current_step_index < len(self.scenario_sequence):
             message, action = self.scenario_sequence[self.current_step_index]
-
 
             self.step_label['text'] = message
             action()
@@ -1636,8 +1783,15 @@ class MyApp(ShowBase):
 
             if self.current_step_index >= len(self.scenario_sequence):
                 self._end_scenario()
+            else:
+                # Показываем кнопку через 5 секунд
+                taskMgr.doMethodLater(5.0, self._show_next_button, "show_next_button")
         else:
             self._end_scenario()
+
+    def _show_next_button(self, task):
+        self.next_step_btn.show()
+        return task.done
 
     def _end_scenario(self):
         self.step_label['text'] = "Сценарий завершен!"
@@ -2537,7 +2691,8 @@ class MyApp(ShowBase):
             self.valve2_start_time = globalClock.getFrameTime()
             self.create_preview_camera(self.valve2.name)
             self.recolor_object(self.valve2_geom, direction)
-
+            self.show_effect("water", self.pipe_left)
+            self.show_effect("water", self.pipe_left_high)
             self.taskMgr.add(self.move_valve2_task, "MoveValve2Task")
 
 
@@ -2566,6 +2721,10 @@ class MyApp(ShowBase):
             self.create_preview_camera(self.valve4.name)
             self.play_sound("media/s1/audio2.mp3")
             self.recolor_object(self.valve4_geom, direction)
+            self.show_effect("water", self.center_pipe0)
+            self.show_effect("water", self.center_pipe1)
+            self.show_effect("water", self.center_pipe2)
+
             self.taskMgr.add(self.move_valve4_task, "MoveValve4Task")
 
     def rotate_valve5(self, direction):
@@ -2587,13 +2746,15 @@ class MyApp(ShowBase):
 
             if direction > 0:
                 self.valve5_target_angle_change = 85
+                self.show_effect("water", self.pipe_left)
+                self.show_effect("water", self.pipe_left_high)
+
             else:
                 self.valve5_target_angle_change = -85
 
 
             self.recolor_object(self.valve5_geom,direction)
             self.create_preview_camera(self.valve5.name)
-            print('2')
             self.taskMgr.add(self.move_valve5_task, "MoveValve5Task")
 
 
@@ -2815,6 +2976,7 @@ class MyApp(ShowBase):
         self._execute_next_sequence_step()
 
     def _execute_sequence_step(self):
+
         """Выполняет шаг последовательности"""
         if self._sequence_index >= len(self._scenario_sequence):
             self._finish_scenario()
