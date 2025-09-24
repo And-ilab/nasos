@@ -19,6 +19,7 @@ from panda3d.core import Shader, TransparencyAttrib
 from panda3d.core import TextureStage, TexGenAttrib  # Добавляем импорт
 from panda3d.core import TextureAttrib, ColorAttrib, MaterialAttrib, TransparencyAttrib, LightAttrib
 
+x = 6
 
 class MyApp(ShowBase):
     def __init__(self):
@@ -45,68 +46,73 @@ class MyApp(ShowBase):
         self._current_task = None
 
         self.scenarios = [
-            # {
-            #     'name': "Подача воды от цистерны",
-            #     'type': 'method',
-            #     'method': 'first_scenario'
-            # },
-            # {
-            #     'name': "Забор воды от открытого водоисточника",
-            #     'type': 'method',
-            #     'method': 'second_scenario'
-            # },
-            # {
-            #     'name': "Забор воды от гидранта",
-            #     'type': 'method',
-            #     'method': 'third_scenario'
-            # },
-            # {
-            #     'name': "Подача воды из цистерны через стационарный лафетный ствол",
-            #     'type': 'method',
-            #     'method': 'fourth_scenario'
-            # },
-            # {
-            #     'name': "Подача пены через стационарный лафетный ствол",
-            #     'type': 'method',
-            #     'method': 'fifth_scenario'
-            # },
-            # {
-            #     'name': "Подача пены на 1 ГПС-600",
-            #     'type': 'method',
-            #     'method': 'sifth_scenario'
-            # },
+            {
+                'name': "Подача воды от цистерны",
+                'type': 'method',
+                'method': 'first_scenario'
+            },
+            {
+                'name': "Забор воды от открытого водоисточника",
+                'type': 'method',
+                'method': 'second_scenario'
+            },
+            {
+                'name': "Забор воды от гидранта",
+                'type': 'method',
+                'method': 'third_scenario'
+            },
+            {
+                'name': "Подача воды из цистерны через стационарный лафетный ствол",
+                'type': 'method',
+                'method': 'fourth_scenario'
+            },
+            {
+                'name': "Подача пены через стационарный лафетный ствол",
+                'type': 'method',
+                'method': 'fifth_scenario'
+            },
+            {
+                'name': "Подача пены на 1 ГПС-600",
+                'type': 'method',
+                'method': 'sifth_scenario'
+            },
             {
                 'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (1 способ)",
                 'type': 'method',
                 'method': 'seven_scenario'
             },
-            # {
-            #     'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (2 способ)",
-            #     'type': 'method',
-            #     'method': 'eight_scenario'
-            # },
-            # {
-            #     'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (3 способ)",
-            #     'type': 'method',
-            #     'method': 'nineth_scenario'
-            # },
-            # {
-            #     'name': "Забор воды из открытого водоисточника при помощи гидроэлеваторной системы(насос-гидроэлеватор-цистерна)",
-            #     'type': 'method',
-            #     'method': 'ten_scenario'
-            # },
-            # {
-            #     'name': "Забор воды из открытого водоисточника при помощи гидроэлеваторной системы(насос-гидроэлеватор-водосборник-насос)",
-            #     'type': 'method',
-            #     'method': 'eleventh__scenario'
-            # },
-            # {
-            #     'name': "Проверка на сухой вакуум",
-            #     'type': 'method',
-            #     'method': 'twelfth_scenario'
-            # },
+            {
+                'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (2 способ)",
+                'type': 'method',
+                'method': 'eight_scenario'
+            },
+            {
+                'name': "Забор воды из открытого водоисточника при неисправной вакуумной системе (3 способ)",
+                'type': 'method',
+                'method': 'nineth_scenario'
+            },
+            {
+                'name': "Забор воды из открытого водоисточника при помощи гидроэлеваторной системы(насос-гидроэлеватор-цистерна)",
+                'type': 'method',
+                'method': 'ten_scenario'
+            },
+            {
+                'name': "Забор воды из открытого водоисточника при помощи гидроэлеваторной системы(насос-гидроэлеватор-водосборник-насос)",
+                'type': 'method',
+                'method': 'eleventh__scenario'
+            },
+            {
+                'name': "Проверка на сухой вакуум",
+                'type': 'method',
+                'method': 'twelfth_scenario'
+
+            },
 
         ]
+
+        print(self.scenarios[x])
+        self.scenarios = [self.scenarios[x]]
+
 
         outline_shader = Shader.load(Shader.SL_GLSL,
                                      vertex="""
@@ -1274,7 +1280,7 @@ class MyApp(ShowBase):
         self.training_mode = False
         self.auto_mode = False
         self.update_scenario_display()
-        #
+
         # self.prev_btn = DirectButton(
         #     parent=self.bottom_panel,
         #     text="<",
@@ -1331,7 +1337,7 @@ class MyApp(ShowBase):
         self.next_step_btn.show()
 
         """Запускает выбранный сценарий через лямбда-функции"""
-        if self.current_scenario == 1:
+        if self.current_scenario == 0:
             self.start_first_scenario()
         if self.current_scenario == 1:
             self.start_second_scenario()
@@ -1345,7 +1351,7 @@ class MyApp(ShowBase):
             self.start_sixth_scenario()
         if self.current_scenario == 6:
             self.start_seven_scenario()
-        if self.current_scenario == 0:
+        if self.current_scenario == 7:
             self.start_eight_scenario()
         if self.current_scenario == 8:
             self.start_nineth_scenario()
@@ -1375,7 +1381,6 @@ class MyApp(ShowBase):
 
 
 
-
     def add_outline_shader(self, valve_geom, alpha=0.3):
         """Добавляет обводку через шейдер с управляемой прозрачностью"""
         from panda3d.core import Shader
@@ -1398,7 +1403,7 @@ class MyApp(ShowBase):
 
         shader = Shader.make(Shader.SL_GLSL, vertex_shader, fragment_shader)
         valve_geom.set_shader(shader)
-        valve_geom.set_shader_input("outline_color", (1, 1, 0.5))  # Только RGB
+        valve_geom.set_shader_input("outline_color", (1, 0.4, 0.5))  # Только RGB
         valve_geom.set_shader_input("alpha", alpha)  # Прозрачность отдельно
         valve_geom.set_transparency(TransparencyAttrib.M_alpha)
 
@@ -1415,8 +1420,8 @@ class MyApp(ShowBase):
 
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека", lambda: self.rotate_valve1(1)),
-            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
-            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
+            ("Откройте задвижку «На лафетный ствол» или «Из цистерны»""", lambda: self.rotate_valve5(1)),
+            ("Откройте задвижку «Из цистерны» или «На лафетный ствол»", lambda: self.rotate_valve4(1)),
             ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
             ("Включите сцепление (стрелка манометра до 3 атм)", lambda: self.rotate_valve1_with_camera(1)),
             ("Откройте напорную задвижку", lambda: self.rotate_valve2(1)),
@@ -1434,9 +1439,9 @@ class MyApp(ShowBase):
         self.auto_mode = True
 
         self.scenario_sequence = [
-            ("Выключите сцепление из насосного отсека",
+            ("Выключите сцепление из насосного отсека или откройте вакуумный кран",
              lambda: self.rotate_valve1(1)),
-            ("Откройте вакуумный кран",
+            ("Откройте вакуумный кран или выключите сцепление из насосного отсека",
              lambda: self.rotate_valve8(1)),
             (
                 "Нажмите кнопку вакуумного насоса (13) — стрелка мановакууметра опустится до -0,6 атм.",
@@ -1464,9 +1469,9 @@ class MyApp(ShowBase):
         print('исправить 1010 строка еще и монометр')
         self.scenario_sequence = [
 
-            ("Выключите сцепление из насосного отсека",
+            ("Выключите сцепление из насосного отсека или Откройте задвижку «В цистерну»",
                                         lambda: self.rotate_valve1(1)),
-            ("Откройте задвижку «В цистерну»",
+            ("Откройте задвижку «В цистерну» или Выключите сцепление из насосного отсек",
                                         lambda: self.rotate_valve13(1)),
 
             ("Включите сцепление(стрелка мановаууметра поднимается до 3атм)",
@@ -1485,9 +1490,9 @@ class MyApp(ShowBase):
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
                                         lambda: self.rotate_valve1(1)),
-            ("Откройте задвижку «На лафетный ствол»",
+            ("Откройте задвижку «На лафетный ствол» или «Из цистерны»",
                                         lambda: self.rotate_valve5(1)),
-            ("Откройте задвижку «Из цистерны»",
+            ("Откройте задвижку «Из цистерны» или «На лафетный ствол»",
                                         lambda: self.rotate_valve4(1)),
             ("Включите сцепление(стрелка манометра поднимается до 3атм)",
                                         lambda: self.rotate_valve1_with_camera(1)),
@@ -1508,11 +1513,11 @@ class MyApp(ShowBase):
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
-            ("Установите дозатор (6) в положение «1»",
+            ("Установите дозатор (6) в положение «3» ",
              lambda: self.rotate_valve44(1)),
-            ("Откройте задвижку «Из цистерны»",
+            ("Откройте задвижку «Из цистерны» или «На лафетный ствол»",
              lambda: self.rotate_valve4(1)),
-            ("Откройте задвижку «На лафетный ствол»",
+            ("Откройте задвижку «На лафетный ствол» или «Из цистерны»",
              lambda: self.rotate_valve5(1)),
             (
                 "Откройте задвижку «ПО из пенобака»",
@@ -1552,9 +1557,9 @@ class MyApp(ShowBase):
              lambda: self.rotate_valve1(1)),
             ("Установите дозатор (6) в положение «1»",
              lambda: self.rotate_valve44(1,1)),
-            ("Откройте кран пеносмесителя (5).",
+            ("Откройте кран пеносмесителя (5). или «Из цистерны»",
                                         lambda: self.rotate_valve99(1)),
-            ("Откройте задвижку «Из цистерны»",
+            ("Откройте задвижку «Из цистерны» или откройте кран пеносмесителя",
              lambda: self.rotate_valve4(1)),
             (
                 "Откройте задвижку «ПО из пенобака»",
@@ -1596,8 +1601,8 @@ class MyApp(ShowBase):
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
-            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
-            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
+            ("Откройте задвижку «Из цистерны» или «На лафетный ствол»", lambda: self.rotate_valve4(1)),
+            ("Откройте задвижку «На лафетный ствол» или «Из цистерны»", lambda: self.rotate_valve5(1)),
 
             ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
             ("Закройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
@@ -1625,8 +1630,8 @@ class MyApp(ShowBase):
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
-            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
-            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
+            ("Откройте задвижку «Из цистерны» или «На лафетный ствол»", lambda: self.rotate_valve4(1)),
+            ("Откройте задвижку «На лафетный ствол» или «Из цистерны»", lambda: self.rotate_valve5(1)),
 
             ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
             ("Включите сцепление(стрелка манометра поднимается до 3атм)",
@@ -1652,17 +1657,17 @@ class MyApp(ShowBase):
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
-            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
-            ("Откройте задвижку «В цистерну»",
+            ("Откройте задвижку «Из цистерны» или «В цистерну»", lambda: self.rotate_valve4(1)),
+            ("Откройте задвижку «В цистерну» или «Из цистерну»",
              lambda: self.rotate_valve13(1)),
             ("Включите сцепление(стрелка манометра поднимается до 3атм)",
              lambda: self.rotate_valve1_with_camera(1)),
             ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 6 атм",
              lambda: self.rotate_valve11(1)),
             ("Закройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
-            ("Откройте напорную задвижку",
+            ("Откройте напорную задвижку или Закрыть задвижку «В цистерну»",
              lambda: self.rotate_valve2(1)),
-            ("Закрыть задвижку «В цистерну»",
+            ("Закрыть задвижку «В цистерну» или Откройте напорную задвижку",
              lambda: self.rotate_valve13(-1)),
             (
                 "Сценарий завершен ",
@@ -1679,15 +1684,15 @@ class MyApp(ShowBase):
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
-
-            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
+            ("Откройте задвижку «Из цистерны» или «На лафетный ствол»", lambda: self.rotate_valve4(1)),
+            ("Откройте задвижку «На лафетный ствол» или «Из цистерны»", lambda: self.rotate_valve5(1)),
             ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
 
             ("Включите сцепление(стрелка манометра поднимается до 3атм)",
              lambda: self.rotate_valve1_with_camera(1)),
             ("Откройте напорную задвижку на гидроэлеватор",
              lambda: self.rotate_valve2(1)),
-            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 8 атм",
+            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 9 атм",
              lambda: self.rotate_valve11(1, eight=True)),
             ("Откройте напорную задвижку на пожар",
              lambda: self.rotate_valve22(1)),
@@ -1707,12 +1712,12 @@ class MyApp(ShowBase):
         self.scenario_sequence = [
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
-            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
-            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
+            ("Откройте задвижку «Из цистерны» или «На лафетный ствол»", lambda: self.rotate_valve4(1)),
+            ("Откройте задвижку «На лафетный ствол» или «Из цистерны»", lambda: self.rotate_valve5(1)),
             ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
             ("Включите сцепление(стрелка манометра поднимается до 3атм)",
              lambda: self.rotate_valve1_with_camera(1)),
-            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 8 атм",
+            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 9 атм",
              lambda: self.rotate_valve11(1, eight=True)),
             ("Закройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
             ("Откройте напорную задвижку(неполностью)",
@@ -1743,19 +1748,19 @@ class MyApp(ShowBase):
                 "Сценарий завершен ",
                 lambda: self.end()),
 
-            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
-            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
-            ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
-            ("Включите сцепление(стрелка манометра поднимается до 3атм)",
-             lambda: self.rotate_valve1_with_camera(1)),
-            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 8 атм",
-             lambda: self.rotate_valve11(1, eight=True)),
-            ("Закройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
-            ("Откройте напорную задвижку(неполностью)",
-             lambda: self.rotate_valve2(1)),
-            (
-                "Сценарий завершен ",
-                lambda: self.end()),
+#            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
+#            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
+#            ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
+#            ("Включите сцепление(стрелка манометра поднимается до 3атм)",
+#             lambda: self.rotate_valve1_with_camera(1)),
+#            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 8 атм",
+#             lambda: self.rotate_valve11(1, eight=True)),
+#            ("Закройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
+#            ("Откройте напорную задвижку(неполностью)",
+#             lambda: self.rotate_valve2(1)),
+#            (
+#                "Сценарий завершен ",
+#                lambda: self.end()),
         ]
 
         self.current_step_index = 0
@@ -2746,8 +2751,10 @@ class MyApp(ShowBase):
 
             if direction > 0:
                 self.valve5_target_angle_change = 85
-                self.show_effect("water", self.pipe_left)
-                self.show_effect("water", self.pipe_left_high)
+                #self.show_effect("water", self.pipe_left)
+                taskMgr.do_method_later(4, lambda task: self.show_effect("water", self.pipe_left), 'effect1')
+                #self.show_effect("water", self.pipe_left_high)
+                taskMgr.do_method_later(4, lambda task: self.show_effect("water", self.pipe_left_high), 'effect1')
 
             else:
                 self.valve5_target_angle_change = -85
