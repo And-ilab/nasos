@@ -1,3 +1,4 @@
+import pygame
 from direct.gui import DirectGui
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import DirectionalLight, AmbientLight, Vec4, TextNode, FrameBufferProperties, WindowProperties, \
@@ -352,7 +353,15 @@ class MyApp(ShowBase):
         #
         # self.taskMgr.add(update_water, "update_water")
 
+        self.time = self.model.find("**/plane1")
+        self.text_texture = None
+        self.current_number = 0
+        self.update_number(42)
+        if self.time.is_empty():
 
+            print("❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌")
+        else:
+            print(f"✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅")
 
         self.valve6_moving = False
         self.valve66_moving = False
@@ -1043,6 +1052,50 @@ class MyApp(ShowBase):
     #     geom.clearBin()
     #     geom.clearShaderInputs()
 
+    def create_number_texture(self, number):
+        """Создает текстуру используя DirectLabel"""
+        from direct.gui.DirectGui import DirectLabel
+        from panda3d.core import TextNode
+
+        # Создаем временный DirectLabel
+        label = DirectLabel(
+            text=str(number),
+            text_fg=(1, 1, 1, 1),  # белый текст
+            text_align=TextNode.A_center,
+            frameColor=(0, 0, 0, 1),  # черный фон
+            scale=0.1,
+            relief=None
+        )
+
+        # Получаем текстуру из label
+        texture = label.component('text0').getTexture()
+
+        # Убираем label со сцены
+        label.destroy()
+
+        print(f"✅ Создана текстура через DirectLabel для: {number}")
+        return texture
+
+    def update_number(self, new_number):
+        """Обновляет цифру на плашке"""
+        print(f"🔄 Обновление цифры на: {new_number}")
+        self.current_number = new_number
+        new_texture = self.create_number_texture(new_number)
+
+        # Проверяем что текстура создана
+        if new_texture is None:
+            print("❌ Текстура не создана")
+            return
+
+        if self.time and not self.time.is_empty():
+            try:
+                self.time.setTexture(new_texture)
+                print("✅ Текстура применена успешно")
+            except Exception as e:
+                print(f"❌ Ошибка применения текстуры: {e}")
+        else:
+            print("❌ Не могу применить текстуру - нод не найден")
+
     def show_effect(self, effect, geom, duration=5.0):
         self.original_shader = geom.getShader()
         self.original_transparency = geom.getTransparency()
@@ -1276,33 +1329,34 @@ class MyApp(ShowBase):
         self.auto_mode = False
         self.update_scenario_display()
 
-        # self.prev_btn = DirectButton(
-        #     parent=self.bottom_panel,
-        #     text="<",
-        #     text_font=font,
-        #     text_align=TextNode.A_center,
-        #     text_fg=(1, 1, 1, 1),
-        #     frameColor=(0.2, 0.2, 0.2, 0.7),
-        #     scale=0.05,
-        #     pos=(-1.4, 0, 0),
-        #     relief=1,
-        #     command=self.prev_scenario)
-        #
-        # self.next_btn = DirectButton(
-        #     parent=self.bottom_panel,
-        #     text=">",
-        #     text_font=font,
-        #     text_align=TextNode.A_center,
-        #     text_fg=(1, 1, 1, 1),
-        #     frameColor=(0.2, 0.2, 0.2, 0.7),
-        #     scale=0.05,
-        #     pos=(1.4, 0, 0),
-        #     relief=1,
-        #     command=self.next_scenario)
+        self.prev_btn = DirectButton(
+            parent=self.bottom_panel,
+            text="<",
+            text_font=font,
+            text_align=TextNode.A_center,
+            text_fg=(1, 1, 1, 1),
+            frameColor=(0.2, 0.2, 0.2, 0.7),
+            scale=0.05,
+            pos=(-1.4, 0, 0),
+            relief=1,
+            command=self.prev_scenario)
+
+        self.next_btn = DirectButton(
+            parent=self.bottom_panel,
+            text=">",
+            text_font=font,
+            text_align=TextNode.A_center,
+            text_fg=(1, 1, 1, 1),
+            frameColor=(0.2, 0.2, 0.2, 0.7),
+            scale=0.05,
+            pos=(1.4, 0, 0),
+            relief=1,
+            command=self.next_scenario)
 
         self.start_btn = DirectButton(
             parent=self.aspect2d,
             text="Старт",
+
             text_font=font,
             text_align=TextNode.A_center,
             text_fg=(1, 1, 1, 1),
@@ -1414,6 +1468,13 @@ class MyApp(ShowBase):
 
 
         self.scenario_sequence = [
+            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.", lambda: self.cont),
+            ("Собрать напорную линию.",
+             lambda: self.cont),
+            ("Проверить закрытие кранов и краников, задвижек.",
+             lambda: self.cont),
+            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+             lambda: self.cont),
             ("Выключите сцепление из насосного отсека", lambda: self.rotate_valve1(1)),
             ("Откройте задвижку «На лафетный ствол» или «Из цистерны»""", lambda: self.rotate_valve5(1)),
             ("Откройте задвижку «Из цистерны» или «На лафетный ствол»", lambda: self.rotate_valve4(1)),
@@ -1429,11 +1490,23 @@ class MyApp(ShowBase):
         self.step_label['text'] = ""
         self.start_btn.show()
 
+    def cont(self):
+        self.step_label['text'] = ""
+
+
     def start_second_scenario(self):
         self.training_mode = True
         self.auto_mode = True
 
         self.scenario_sequence = [
+            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+             lambda: self.cont),
+            ("Собрать напорную линию.",
+             lambda: self.cont),
+            ("Проверить закрытие кранов и краников, задвижек.",
+             lambda: self.cont),
+            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+             lambda: self.cont),
             ("Выключите сцепление из насосного отсека или откройте вакуумный кран",
              lambda: self.rotate_valve1(1)),
             ("Откройте вакуумный кран или выключите сцепление из насосного отсека",
@@ -1463,6 +1536,14 @@ class MyApp(ShowBase):
         self.auto_mode = True
         print('исправить 1010 строка еще и монометр')
         self.scenario_sequence = [
+            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+             lambda: self.cont),
+            ("Собрать напорную линию.",
+             lambda: self.cont),
+            ("Проверить закрытие кранов и краников, задвижек.",
+             lambda: self.cont),
+            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+             lambda: self.cont),
 
             ("Выключите сцепление из насосного отсека или Откройте задвижку «В цистерну»",
                                         lambda: self.rotate_valve1(1)),
@@ -1483,6 +1564,14 @@ class MyApp(ShowBase):
         self.auto_mode = True
 
         self.scenario_sequence = [
+            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+             lambda: self.cont),
+            ("Собрать напорную линию.",
+             lambda: self.cont),
+            ("Проверить закрытие кранов и краников, задвижек.",
+             lambda: self.cont),
+            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+             lambda: self.cont),
             ("Выключите сцепление из насосного отсека",
                                         lambda: self.rotate_valve1(1)),
             ("Откройте задвижку «На лафетный ствол» или «Из цистерны»",
@@ -1506,6 +1595,14 @@ class MyApp(ShowBase):
         self.auto_mode = True
 
         self.scenario_sequence = [
+            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+             lambda: self.cont),
+            ("Собрать напорную линию.",
+             lambda: self.cont),
+            ("Проверить закрытие кранов и краников, задвижек.",
+             lambda: self.cont),
+            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+             lambda: self.cont),
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
             ("Установите дозатор (6) в положение «3» ",
@@ -1548,6 +1645,14 @@ class MyApp(ShowBase):
         self.training_mode = True
         self.auto_mode = True
         self.scenario_sequence = [
+            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+             lambda: self.cont),
+            ("Собрать напорную линию.",
+             lambda: self.cont),
+            ("Проверить закрытие кранов и краников, задвижек.",
+             lambda: self.cont),
+            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+             lambda: self.cont),
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
             ("Установите дозатор (6) в положение «1»",
