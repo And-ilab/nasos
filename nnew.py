@@ -1052,33 +1052,99 @@ class MyApp(ShowBase):
     #     geom.clearBin()
     #     geom.clearShaderInputs()
 
+    # def create_number_texture(self, number):
+    #     """Создает текстуру используя DirectLabel"""
+    #     from direct.gui.DirectGui import DirectLabel
+    #     from panda3d.core import TextNode
+    #
+    #     # Создаем временный DirectLabel
+    #     label = DirectLabel(
+    #         text=str(number),
+    #         text_fg=(1, 1, 1, 1),  # белый текст
+    #         text_align=TextNode.A_center,
+    #         frameColor=(0, 0, 0, 1),  # черный фон
+    #         scale=0.1,
+    #         relief=None
+    #     )
+    #
+    #     # Получаем текстуру из label
+    #     texture = label.component('text0').getTexture()
+    #
+    #     # Убираем label со сцены
+    #     label.destroy()
+    #
+    #     print(f"✅ Создана текстура через DirectLabel для: {number}")
+    #     return texture
+
     def create_number_texture(self, number):
         """Создает текстуру используя DirectLabel"""
         from direct.gui.DirectGui import DirectLabel
         from panda3d.core import TextNode
 
-        # Создаем временный DirectLabel
-        label = DirectLabel(
-            text=str(number),
-            text_fg=(1, 1, 1, 1),  # белый текст
-            text_align=TextNode.A_center,
-            frameColor=(0, 0, 0, 1),  # черный фон
-            scale=0.1,
-            relief=None
-        )
+        try:
+            # Создаем временный DirectLabel
+            label = DirectLabel(
+                text=str(number),
+                text_fg=(1, 1, 1, 1),  # белый текст
+                text_align=TextNode.A_center,
+                frameColor=(0, 0, 0, 1),  # черный фон
+                scale=0.1,
+                relief=None
+            )
 
-        # Получаем текстуру из label
-        texture = label.component('text0').getTexture()
+            # ДАЕМ ВРЕМЯ ДЛЯ РЕНДЕРИНГА ТЕКСТУРЫ
+            base.graphicsEngine.renderFrame()
 
-        # Убираем label со сцены
-        label.destroy()
+            # Получаем текстуру из label
+            texture = label.component('text0').getTexture()
 
-        print(f"✅ Создана текстура через DirectLabel для: {number}")
+            # Убираем label со сцены
+            label.destroy()
+
+            if texture is not None:
+                print(f"✅ Создана текстура через DirectLabel для: {number}")
+                return texture
+            else:
+                print(f"❌ Текстура None для: {number}")
+                return self.create_fallback_texture(number)
+
+        except Exception as e:
+            print(f"❌ Ошибка в create_number_texture: {e}")
+            return self.create_fallback_texture(number)
+
+    def create_manual_plane(self):
+        """Создает плашку вручную если не найдена в модели"""
+        from panda3d.core import CardMaker
+        cm = CardMaker("plane1")
+        cm.setFrame(-0.5, 0.5, -0.25, 0.25)  # размеры
+        self.time = self.model.attachNewNode(cm.generate())
+        self.time.setPos(0, 0.1, 0.5)  # позиция на модели
+
+    def create_fallback_texture(self, number):
+        """Создает простую текстуру как запасной вариант"""
+        from panda3d.core import Texture
+        import array
+
+        width, height = 128, 64
+        texture = Texture()
+        texture.setup2dTexture(width, height, Texture.T_unsigned_byte, Texture.F_rgb)
+
+        # Черный фон
+        data = array.array('B', [0] * (width * height * 3))
+        texture.setRamImage(data)
+
+        print(f"✅ Создана fallback текстура для: {number}")
         return texture
 
     def update_number(self, new_number):
         """Обновляет цифру на плашке"""
         print(f"🔄 Обновление цифры на: {new_number}")
+
+        # ОТЛАДКА: проверяем нод
+        print(f"🔍 self.time: {self.time}")
+        if self.time:
+            print(f"📝 is_empty(): {self.time.is_empty()}")
+
         self.current_number = new_number
         new_texture = self.create_number_texture(new_number)
 
@@ -1091,10 +1157,37 @@ class MyApp(ShowBase):
             try:
                 self.time.setTexture(new_texture)
                 print("✅ Текстура применена успешно")
+
+                # Дополнительно: настраиваем фильтрацию
+                new_texture.setMinfilter(Texture.FT_linear)
+                new_texture.setMagfilter(Texture.FT_linear)
+
             except Exception as e:
                 print(f"❌ Ошибка применения текстуры: {e}")
+                import traceback
+                traceback.print_exc()
         else:
             print("❌ Не могу применить текстуру - нод не найден")
+
+    # def update_number(self, new_number):
+    #     """Обновляет цифру на плашке"""
+    #     print(f"🔄 Обновление цифры на: {new_number}")
+    #     self.current_number = new_number
+    #     new_texture = self.create_number_texture(new_number)
+    #
+    #     # Проверяем что текстура создана
+    #     if new_texture is None:
+    #         print("❌ Текстура не создана")
+    #         return
+    #
+    #     if self.time and not self.time.is_empty():
+    #         try:
+    #             self.time.setTexture(new_texture)
+    #             print("✅ Текстура применена успешно")
+    #         except Exception as e:
+    #             print(f"❌ Ошибка применения текстуры: {e}")
+    #     else:
+    #         print("❌ Не могу применить текстуру - нод не найден")
 
     def show_effect(self, effect, geom, duration=5.0):
         self.original_shader = geom.getShader()
