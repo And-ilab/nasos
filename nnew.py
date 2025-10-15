@@ -110,6 +110,16 @@ class MyApp(ShowBase):
 
         ]
 
+        self.step_to_valve = {
+            1: "valve1",  # "Выключите сцепление из насосного отсека"
+            'valve5': "valve5",  # "Откройте задвижку «На лафетный ствол»"
+            'valve4': "valve4",  # "Откройте задвижку «Из цистерны»"
+            7: "valve5",  # "Закройте задвижку «На лафетный ствол»"
+            8: "valve1",  # "Включите сцепление"
+            9: "valve2",  # "Откройте напорную задвижку"
+            10: "valve11"  # "Поднимите давление до 6 атм"
+        }
+
         outline_shader = Shader.load(Shader.SL_GLSL,
                                      vertex="""
             void main() {
@@ -207,7 +217,7 @@ class MyApp(ShowBase):
         render.set_light(render.attach_new_node(alight))
 
 
-        self.model = self.loader.load_model("3.glb")
+        self.model = self.loader.load_model("5.glb")
         self.model.reparent_to(self.render)
         self.model.set_scale(1)
         self.cam.look_at(self.model)
@@ -809,54 +819,6 @@ class MyApp(ShowBase):
             self.valve111_moving = False
             self.valve111_direction = 1
 
-        # valve2_geom = self.model.find("**/COMPOUND1")
-        # print(111)
-        # print(valve2_geom)
-        # point5 = self.model.find("**/point5")
-        #
-        # if valve2_geom.is_empty() or point5.is_empty():
-        #     print("❌ Вентиль 2 или точка вращения не найдены!")
-        # else:
-        #     print("✅ Вентиль 2 и точка вращения найдены")
-        #
-        #     # Получаем начальные трансформации
-        #     original_mat = valve2_geom.get_mat(self.model)
-        #     pivot_pos = point5.get_pos(self.model)
-        #     valve2_pos = valve2_geom.get_pos(self.model)
-        #     valve2_hpr = valve2_geom.get_hpr(self.model)  # Сохраняем начальные углы поворота
-        #
-        #     # Создаем иерархию узлов
-        #     self.valve2_root = self.model.attach_new_node("valve2_root")
-        #     self.valve2_root.set_pos(pivot_pos)
-        #
-        #     self.valve2_pivot = self.valve2_root.attach_new_node("valve2_pivot")
-        #     self.valve2_pivot.set_pos(0, 0, 0)
-        #
-        #     # Переносим геометрию с сохранением трансформации
-        #     valve2_geom.wrt_reparent_to(self.valve2_pivot)
-        #     self.valve2 = valve2_geom
-        #     valve2_geom.set_mat(original_mat)
-        #
-        #     # Устанавливаем относительную позицию
-        #     relative_pos = valve2_pos - pivot_pos
-        #     valve2_geom.set_pos(relative_pos)
-        #
-        #     # Восстанавливаем начальный поворот (45 градусов)
-        #     valve2_geom.set_hpr(valve2_hpr)
-        #
-        #     # Настройки вращения
-        #     self.valve2.name = 'Левая напорная задвижка'
-        #     self.valve2_pivot.set_p(0)  # Сброс начального угла вращения
-        #     self.valve2_target_angle = 90  # Угол поворота
-        #     self.valve2_moving = False
-        #     self.valve2_direction = 1
-        #
-        #     # Отладочный маркер
-        #     self.debug_marker = self.loader.loadModel("models/smiley")
-        #     self.debug_marker.reparent_to(self.render)
-        #     self.debug_marker.set_pos(pivot_pos)
-        #     self.debug_marker.set_scale(0.1)
-        #     self.debug_marker.set_color(1, 0, 0, 1)
 
         valve99_geom = self.model.find("**/COMPOUND99")
         self.valve99_geom = valve99_geom
@@ -1021,60 +983,6 @@ class MyApp(ShowBase):
         self.preview_card = None
         self.setup_gui(font)
 
-    # def create_outline(obj, color=(1, 0, 0, 1), thickness=1.03):
-    #     """Создает контур вокруг объекта"""
-    #     outline = obj.copy_to(obj.get_parent())
-    #     outline.set_scale(thickness)
-    #     outline.set_color(color)
-    #     outline.set_transparency(TransparencyAttrib.M_alpha)
-    #     outline.set_light_off(True)  # Игнорировать освещение
-    #     outline.set_render_mode_wireframe()  # Контурный вид
-    #     return outline
-
-
-    # def show_effect(self, effect, geom):
-    #     if effect == water:
-    #         self.geom.setShader(self.water_shader)
-    #         self.geom.setTransparency(TransparencyAttrib.MAlpha)
-    #         self.geom.setShaderInput("time", 0.0)
-    #
-    #     elif effect = foam:
-    #         self.geom.setShader(self.water_shader)
-    #         self.geom.setTransparency(TransparencyAttrib.MAlpha)
-    #         self.geom.setShaderInput("time", 0.0)
-    #
-    #
-    #
-    # def show_effect(self, geom):
-    #     geom.setShaderOff()
-    #     geom.setTransparency(TransparencyAttrib.MNone)
-    #     geom.setDepthWrite(True)
-    #     geom.clearBin()
-    #     geom.clearShaderInputs()
-
-    # def create_number_texture(self, number):
-    #     """Создает текстуру используя DirectLabel"""
-    #     from direct.gui.DirectGui import DirectLabel
-    #     from panda3d.core import TextNode
-    #
-    #     # Создаем временный DirectLabel
-    #     label = DirectLabel(
-    #         text=str(number),
-    #         text_fg=(1, 1, 1, 1),  # белый текст
-    #         text_align=TextNode.A_center,
-    #         frameColor=(0, 0, 0, 1),  # черный фон
-    #         scale=0.1,
-    #         relief=None
-    #     )
-    #
-    #     # Получаем текстуру из label
-    #     texture = label.component('text0').getTexture()
-    #
-    #     # Убираем label со сцены
-    #     label.destroy()
-    #
-    #     print(f"✅ Создана текстура через DirectLabel для: {number}")
-    #     return texture
 
     def create_number_texture(self, number):
         """Создает текстуру используя DirectLabel"""
@@ -1169,25 +1077,6 @@ class MyApp(ShowBase):
         else:
             print("❌ Не могу применить текстуру - нод не найден")
 
-    # def update_number(self, new_number):
-    #     """Обновляет цифру на плашке"""
-    #     print(f"🔄 Обновление цифры на: {new_number}")
-    #     self.current_number = new_number
-    #     new_texture = self.create_number_texture(new_number)
-    #
-    #     # Проверяем что текстура создана
-    #     if new_texture is None:
-    #         print("❌ Текстура не создана")
-    #         return
-    #
-    #     if self.time and not self.time.is_empty():
-    #         try:
-    #             self.time.setTexture(new_texture)
-    #             print("✅ Текстура применена успешно")
-    #         except Exception as e:
-    #             print(f"❌ Ошибка применения текстуры: {e}")
-    #     else:
-    #         print("❌ Не могу применить текстуру - нод не найден")
 
     def show_effect(self, effect, geom, duration=5.0):
         self.original_shader = geom.getShader()
@@ -1196,7 +1085,8 @@ class MyApp(ShowBase):
 
         if effect == "water":
             print(self .pipe)
-            geom.setShader(self.water_shader)
+            # geom.setShader(self.water_shader)
+            geom.setShader(self.foam_shader)
             geom.setTransparency(TransparencyAttrib.MAlpha)
             geom.setBin("fixed", 40)  # Важно добавить!
             geom.setDepthWrite(False)
@@ -1213,14 +1103,12 @@ class MyApp(ShowBase):
         taskMgr.doMethodLater(duration, lambda task: self.hide_effect(geom, task), "hide_effect_task")
 
     def hide_effect(self, geom, task):
-        # Восстанавливаем оригинальные настройки
         geom.setShaderOff()
         geom.setTransparency(TransparencyAttrib.MNone)
         geom.setDepthWrite(True)
         geom.clearBin()
-        #geom.clearShaderInputs()
 
-        return task.done  # Обязательно возвращаем task.done
+        return task.done
 
     def apply_water_effect(self, pipe):
         """Применяем эффект воды к трубе"""
@@ -1241,17 +1129,6 @@ class MyApp(ShowBase):
 
         # 4. Запускаем анимацию течения
         self.start_water_animation(pipe)
-
-    # def setup_water_pipe(self):
-    #     """Простая настройка трубы с водой (без текстуры)"""
-    #     pipe = self.pipe
-    #
-    #     if pipe and not pipe.is_empty():
-    #         from panda3d.core import TransparencyAttrib
-    #
-    #         # Просто устанавливаем цвет и прозрачность
-    #         pipe.set_transparency(TransparencyAttrib.M_alpha)
-    #         pipe.set_color(0.2, 0.4, 0.8, 0.6)  # Синий, полупрозрачный
 
     def load_sounds(self):
         self.sounds = {}
@@ -1510,10 +1387,15 @@ class MyApp(ShowBase):
         self._execute_next_step()
 
     def recolor_object(self, valve_geom, recolor=1):
+        print("ya dolb")
+        print(valve_geom, recolor)
         try:
             if recolor == 1:
                 if not valve_geom.is_empty():
                     self.add_outline_shader(valve_geom)
+            elif recolor == 2:
+                if not valve_geom.is_empty():
+                    self.add_outline_shader_v2(valve_geom)
 
             else:
                 valve_geom.set_shader_off()
@@ -1549,6 +1431,65 @@ class MyApp(ShowBase):
         valve_geom.set_shader_input("alpha", alpha)  # Прозрачность отдельно
         valve_geom.set_transparency(TransparencyAttrib.M_alpha)
 
+    def add_outline_shader_v2(self, valve_geom, alpha=0.3):
+        """Добавляет обводку через шейдер с управляемой прозрачностью"""
+        from panda3d.core import Shader
+
+        vertex_shader = """
+        #version 130
+        void main() {
+            gl_Position = ftransform();
+        }
+        """
+
+        fragment_shader = """
+        #version 130
+        uniform vec3 outline_color;
+        uniform float alpha;
+        void main() {
+            gl_FragColor = vec4(outline_color, alpha);
+        }
+        """
+
+        shader = Shader.make(Shader.SL_GLSL, vertex_shader, fragment_shader)
+        valve_geom.set_shader(shader)
+        valve_geom.set_shader_input("outline_color", (1, 0.9, 0.5))  # Только RGB
+        valve_geom.set_shader_input("alpha", alpha)  # Прозрачность отдельно
+        valve_geom.set_transparency(TransparencyAttrib.M_alpha)
+
+
+    def highlight_valve(self, valve_name):
+        """Подсвечивает указанный клапан"""
+        self.reset_all_highlights()
+        print('тут')
+        if valve_name == "valve1" and hasattr(self, 'valve1_geom'):
+            self.recolor_object(self.valve1_geom,2)
+            print(f"Подсвечен valve1")
+        elif valve_name == "valve2" and hasattr(self, 'valve2_geom'):
+            self.recolor_object(self.valve2_geom,2)
+            print(f"Подсвечен valve2")
+        elif valve_name == "valve4" and hasattr(self, 'valve4_geom'):
+            self.recolor_object(self.valve4_geom,2)
+            print(f"Подсвечен valve4")
+        elif valve_name == "valve5" and hasattr(self, 'valve5_geom'):
+            self.recolor_object(self.valve5_geom,2)
+            print(f"Подсвечен valve5")
+        elif valve_name == "valve11" and hasattr(self, 'valve11_geom'):
+            self.recolor_object(self.valve11_geom,2)
+            print(f"Подсвечен valve11")
+        else:
+            print(f"Клапан {valve_name} не найден для подсветки")
+
+
+    def reset_all_highlights(self):
+        """Сбрасываем подсветки прямым обращением"""
+        valves = ['valve1_geom', 'valve2_geom', 'valve4_geom', 'valve5_geom', 'valve11_geom']
+
+        for valve_name in valves:
+            valve_geom = getattr(self, valve_name, None)
+            if valve_geom and hasattr(valve_geom, 'setColor'):
+                valve_geom.setColor(1, 1, 1, 1)
+                print(f"Сброшен {valve_name}")
 
     def remove_outline(self, outline_node):
         """Удаляет обводку"""
@@ -1561,23 +1502,26 @@ class MyApp(ShowBase):
 
 
         self.scenario_sequence = [
-            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.", lambda: self.cont),
-            ("Собрать напорную линию.",
-             lambda: self.cont),
-            ("Проверить закрытие кранов и краников, задвижек.",
-             lambda: self.cont),
-            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
-             lambda: self.cont),
-            ("Выключите сцепление из насосного отсека", lambda: self.rotate_valve1(1)),
-            ("Откройте задвижку «На лафетный ствол» или «Из цистерны»""", lambda: self.rotate_valve5(1)),
-            ("Откройте задвижку «Из цистерны» или «На лафетный ствол»", lambda: self.rotate_valve4(1)),
-            ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
-            ("Включите сцепление (стрелка манометра до 3 атм)", lambda: self.rotate_valve1_with_camera(1)),
+            # ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.", lambda: self.cont),
+            # ("Собрать напорную линию.",
+            #  lambda: self.cont),
+            # ("Проверить закрытие кранов и краников, задвижек.",
+            #  lambda: self.cont),
+            # ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+            #  lambda: self.cont),
+            ("Выключите сцепление из насосного отсека", lambda: self.rotate_valve1(1, "valve5")),
+            ("Откройте задвижку «На лафетный ствол» или «Из цистерны»""", lambda: self.rotate_valve5(1, "valve4")),
+            ("Откройте задвижку «Из цистерны» или «На лафетный ствол»", lambda: self.rotate_valve4(1, "valve5")),
+            ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1, "plane14")),
+            ("Включите сцепление (стрелка манометра до 3 атм)", lambda: self.rotate_valve1_with_camera(1,next_valve="valve2")),
             ("Откройте напорную задвижку", lambda: self.rotate_valve2(1)),
             ("Поднимите давление до 6 атм", lambda: self.rotate_valve11(1)),
             ("Сценарий завершен", self.end)
         ]
+
+
         self.current_step_index = 0
+
 
     def end(self):
         self.step_label['text'] = ""
@@ -1592,14 +1536,14 @@ class MyApp(ShowBase):
         self.auto_mode = True
 
         self.scenario_sequence = [
-            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
-             lambda: self.cont),
-            ("Собрать напорную линию.",
-             lambda: self.cont),
-            ("Проверить закрытие кранов и краников, задвижек.",
-             lambda: self.cont),
-            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
-             lambda: self.cont),
+            # ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+            #  lambda: self.cont),
+            # ("Собрать напорную линию.",
+            #  lambda: self.cont),
+            # ("Проверить закрытие кранов и краников, задвижек.",
+            #  lambda: self.cont),
+            # ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+            #  lambda: self.cont),
             ("Выключите сцепление из насосного отсека или откройте вакуумный кран",
              lambda: self.rotate_valve1(1)),
             ("Откройте вакуумный кран или выключите сцепление из насосного отсека",
@@ -1629,14 +1573,14 @@ class MyApp(ShowBase):
         self.auto_mode = True
         print('исправить 1010 строка еще и монометр')
         self.scenario_sequence = [
-            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
-             lambda: self.cont),
-            ("Собрать напорную линию.",
-             lambda: self.cont),
-            ("Проверить закрытие кранов и краников, задвижек.",
-             lambda: self.cont),
-            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
-             lambda: self.cont),
+            # ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+            #  lambda: self.cont),
+            # ("Собрать напорную линию.",
+            #  lambda: self.cont),
+            # ("Проверить закрытие кранов и краников, задвижек.",
+            #  lambda: self.cont),
+            # ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+            #  lambda: self.cont),
 
             ("Выключите сцепление из насосного отсека или Откройте задвижку «В цистерну»",
                                         lambda: self.rotate_valve1(1)),
@@ -1657,14 +1601,14 @@ class MyApp(ShowBase):
         self.auto_mode = True
 
         self.scenario_sequence = [
-            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
-             lambda: self.cont),
-            ("Собрать напорную линию.",
-             lambda: self.cont),
-            ("Проверить закрытие кранов и краников, задвижек.",
-             lambda: self.cont),
-            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
-             lambda: self.cont),
+            # ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+            #  lambda: self.cont),
+            # ("Собрать напорную линию.",
+            #  lambda: self.cont),
+            # ("Проверить закрытие кранов и краников, задвижек.",
+            #  lambda: self.cont),
+            # ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+            #  lambda: self.cont),
             ("Выключите сцепление из насосного отсека",
                                         lambda: self.rotate_valve1(1)),
             ("Откройте задвижку «На лафетный ствол» или «Из цистерны»",
@@ -1688,14 +1632,14 @@ class MyApp(ShowBase):
         self.auto_mode = True
 
         self.scenario_sequence = [
-            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
-             lambda: self.cont),
-            ("Собрать напорную линию.",
-             lambda: self.cont),
-            ("Проверить закрытие кранов и краников, задвижек.",
-             lambda: self.cont),
-            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
-             lambda: self.cont),
+            # ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+            #  lambda: self.cont),
+            # ("Собрать напорную линию.",
+            #  lambda: self.cont),
+            # ("Проверить закрытие кранов и краников, задвижек.",
+            #  lambda: self.cont),
+            # ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+            #  lambda: self.cont),
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
             ("Установите дозатор (6) в положение «3» ",
@@ -1738,14 +1682,14 @@ class MyApp(ShowBase):
         self.training_mode = True
         self.auto_mode = True
         self.scenario_sequence = [
-            ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
-             lambda: self.cont),
-            ("Собрать напорную линию.",
-             lambda: self.cont),
-            ("Проверить закрытие кранов и краников, задвижек.",
-             lambda: self.cont),
-            ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
-             lambda: self.cont),
+            # ("Установить автомобиль в безопасном месте, в КПП нейтральная передача, подложить под колеса противооткатные упоры.",
+            #  lambda: self.cont),
+            # ("Собрать напорную линию.",
+            #  lambda: self.cont),
+            # ("Проверить закрытие кранов и краников, задвижек.",
+            #  lambda: self.cont),
+            # ("Выжать сцепление, включить 9 передачу, включить КОМ плавно отпустить сцепление. Стрелки манометра и мановакууметра стоят на нуле.",
+            #  lambda: self.cont),
             ("Выключите сцепление из насосного отсека",
              lambda: self.rotate_valve1(1)),
             ("Установите дозатор (6) в положение «1»",
@@ -1940,20 +1884,6 @@ class MyApp(ShowBase):
             (
                 "Сценарий завершен ",
                 lambda: self.end()),
-
-#            ("Откройте задвижку «Из цистерны»", lambda: self.rotate_valve4(1)),
-#            ("Откройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(1)),
-#            ("Закройте задвижку «На лафетный ствол»", lambda: self.rotate_valve5(-1)),
-#            ("Включите сцепление(стрелка манометра поднимается до 3атм)",
-#             lambda: self.rotate_valve1_with_camera(1)),
-#            ("Кратковременными нажатиями кнопки увеличения оборотов двигателя поднимаем давления до 8 атм",
-#             lambda: self.rotate_valve11(1, eight=True)),
-#            ("Закройте задвижку «Из цистерны»", lambda: self.rotate_valve4(-1)),
-#            ("Откройте напорную задвижку(неполностью)",
-#             lambda: self.rotate_valve2(1)),
-#            (
-#                "Сценарий завершен ",
-#                lambda: self.end()),
         ]
 
         self.current_step_index = 0
@@ -1966,7 +1896,7 @@ class MyApp(ShowBase):
         self.next_step_btn.show()
 
     def _execute_next_step(self):
-        # Сразу скрываем кнопку
+
         self.next_step_btn.hide()
 
         if not hasattr(self, 'scenario_sequence'):
@@ -2281,8 +2211,9 @@ class MyApp(ShowBase):
                 self.valve5_is_open = True
             else:
                 self.valve5_is_open = False
-
+            print('tet')
             if self.training_mode:
+                print("tettee")
                 self.on_step_completed()
 
                 self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
@@ -2694,7 +2625,7 @@ class MyApp(ShowBase):
 
         return task.cont
 
-    def rotate_valve11(self, direction, eight = None):
+    def rotate_valve11(self, direction, eight = None, next_valve = None):
         print("first stage")
         if hasattr(self, 'plane11'):
             print("second stage")
@@ -2722,7 +2653,7 @@ class MyApp(ShowBase):
             self.taskMgr.add(self.move_valve6_task, "MoveValve6Task")
             self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
 
-    def rotate_valve1_with_camera(self, direction,end = None):
+    def rotate_valve1_with_camera(self, direction,end = None, next_valve=None):
         print(f"Вращаем вентиль 1, направление: {direction}")
         if hasattr(self, 'plane14'):
             self.plane14.set_color_scale(1, 0, 0, 1)
@@ -2747,6 +2678,8 @@ class MyApp(ShowBase):
                 self.valve6_moving = True
                 self.valve6_start_time = globalClock.getFrameTime()
 
+            if next_valve:
+                self.highlight_valve(next_valve)
 
             self.start_background_music()
             self.create_preview_camera(self.plane14.name, is_bottom=False)
@@ -2819,7 +2752,7 @@ class MyApp(ShowBase):
 
             self.taskMgr.do_method_later(5.0, self.next_scenario_step, "DelayedNextStep")
 
-    def rotate_valve1(self, direction):
+    def rotate_valve1(self, direction, next_valve=None):
         self.toggle_background_music()
 
         if hasattr(self, 'plane14'):
@@ -2827,6 +2760,10 @@ class MyApp(ShowBase):
             self.plane14.set_color_scale(1, 0, 0, 1)
             base.graphicsEngine.renderFrame()
             self.create_preview_camera(self.plane14.name)
+            if next_valve:
+                print(next_valve, '!!!!!!!!!!!!!!!!')
+                self.highlight_valve(next_valve)
+                print('valve1(first)')
 
 
             def update_camera(task):
@@ -2879,7 +2816,7 @@ class MyApp(ShowBase):
 
             self.taskMgr.do_method_later(0.1, self.next_scenario_step, "DelayedNextStep")
 
-    def rotate_valve2(self, direction):
+    def rotate_valve2(self, direction, next_valve=None):
 
         print(f"Вращаем вентиль 2, направление: {direction}")
         if hasattr(self, 'valve2_pivot'):
@@ -2892,6 +2829,10 @@ class MyApp(ShowBase):
             self.show_effect("water", self.pipe_left)
             self.show_effect("water", self.pipe_left_high)
             self.taskMgr.add(self.move_valve2_task, "MoveValve2Task")
+            if next_valve:
+                self.highlight_valve(next_valve)
+
+
 
 
     def rotate_valve22(self, direction):
@@ -2911,27 +2852,32 @@ class MyApp(ShowBase):
             self.create_preview_camera(self.valve3.name)
             self.taskMgr.add(self.move_valve3_task, "MoveValve3Task")
 
-    def rotate_valve4(self, direction):
+    def rotate_valve4(self, direction,next_valve=None):
         if hasattr(self, 'valve4_pivot'):
             self.valve4_direction = direction
             self.valve4_moving = True
             self.valve4_start_time = globalClock.getFrameTime()
             self.create_preview_camera(self.valve4.name)
             self.play_sound("media/s1/audio2.mp3")
+            if next_valve:
+                self.highlight_valve(next_valve)
+                print('this is four')
             self.recolor_object(self.valve4_geom, direction)
             self.show_effect("water", self.center_pipe0)
             self.show_effect("water", self.center_pipe1)
             self.show_effect("water", self.center_pipe2)
 
+
             self.taskMgr.add(self.move_valve4_task, "MoveValve4Task")
 
-    def rotate_valve5(self, direction):
+    def rotate_valve5(self, direction, next_valve=None):
         print('точка входа')
         if hasattr(self, 'valve5_pivot'):
             if (direction > 0 and hasattr(self, 'valve5_is_open') and self.valve5_is_open) or \
                     (direction < 0 and hasattr(self, 'valve5_is_open') and not self.valve5_is_open):
                 print('how')
-                self.on_step_completed()
+                print('я здесб')
+                #self.on_step_completed('valve5')
                 return
             print('1')
             if not hasattr(self, 'valve5_current_angle'):
@@ -2952,6 +2898,9 @@ class MyApp(ShowBase):
             else:
                 self.valve5_target_angle_change = -85
 
+            if next_valve:
+                self.highlight_valve(next_valve)
+                print('five suka')
 
             self.recolor_object(self.valve5_geom,direction)
             self.create_preview_camera(self.valve5.name)
@@ -3122,26 +3071,32 @@ class MyApp(ShowBase):
         return - (position - 1) * 60
 
     def on_step_completed(self):
+        print("1!!!!!!!!!")
         """Обрабатывает завершение шага сценария"""
         if not hasattr(self, 'current_scenario') or not hasattr(self, 'scenarios'):
             return
-
+        print("2!!!!!!!!!")
         scenario = self.scenarios[self.current_scenario]
+        print("3!!!!!!!!!")
 
         if scenario.get('type') == 'method':
+            print('1234')
+
             self.training_mode = False
             self.auto_mode = False
-            # self.step_label['text'] = "Сценарий завершен!"
+
             return
 
-        # Для пошаговых сценариев
         if 'steps' in scenario:
             self.current_step += 1
+            print('111')
+            print('222')
             if self.current_step >= len(scenario['steps']):
                 self.training_mode = False
                 self.auto_mode = False
-            # self.step_label['text'] = "Сценарий завершен!"
+
             else:
+
                 self.execute_current_step()
 
     def start_valve_spin(self, valve_num):
